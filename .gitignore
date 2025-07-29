@@ -1,0 +1,9 @@
+/.vs
+/Engine/Binaries
+/Binaries
+/Intermediates
+*.vcxproj
+*.vcxproj.user
+*.vcxproj.filters
+*.sln
+/Game/imgui.ini
