@@ -28,7 +28,7 @@ public:
 
 	void Run();
 
-	void AddObjectToDraw(std::shared_ptr<Entity> object) { m_Entites.emplace_back(object); }
+	void AddEntity(std::shared_ptr<Entity> object) { m_Entites.emplace_back(object); }
 
 	GLFWwindow* GetWindow() { return m_Window; }
 

@@ -41,7 +41,7 @@ class Game
 public:
 	~Game();
 
-	static void Init(std::string_view name = "");
+	static void Init(std::string_view name);
 
 	static void Shutdown();
 

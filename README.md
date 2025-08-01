@@ -14,6 +14,8 @@
 ## Build system
 Premake script files for the Engine static library and the Game main project.
 
-Run Scripts/Setup.bat to create project files.
+Run Scripts/Setup.bat to create project files and VS solution.
 
-### Third party libraries - ImGUI, glm, glfw, vulkan
+### Requirements - installed Vulkan SDK
+
+### Third party libraries - ImGUI, glm, glfw, Vulkan

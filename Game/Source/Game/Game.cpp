@@ -19,7 +19,7 @@ static Game* s_Instance = nullptr;
 Game::Game(std::string_view name)
 {
 	m_Engine = std::make_unique<Engine>(name);
-	m_Engine->AddObjectToDraw(m_Player);
+	m_Engine->AddEntity(m_Player);
 }
 
 Game::~Game()
