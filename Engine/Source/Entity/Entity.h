@@ -14,48 +14,40 @@ public:
 
 	virtual void Update(float deltaTime) {}
 
-	template<typename T>
-	T* AddComponent()
+	template<typename T, typename... Args>
+	T& AddComponent(Args&&... args)
 	{
-		T* addedComponent = nullptr;
-		if (GetComponent<T>() == nullptr)
-		{
-			const size_t id = typeid(T).hash_code();
-			addedComponent = new T(id, this);
+		static_assert(std::is_base_of_v<Component, T>, "T must be of type Component.");
+		assert(!HasComponent<T>() && "This Component is already present.");
 
-			std::unique_ptr<Component> newComponent = std::unique_ptr<Component>(addedComponent);
-			m_Components.emplace(id, std::move(newComponent));
-		}
+		const size_t id = typeid(T).hash_code();
+		m_Components.emplace(id, std::make_unique<T>(this, std::forward<Args>(args)...));
 
-		return addedComponent;
+		return *(static_cast<T*>(m_Components[id].get()));
 	}
 
 	template<typename T>
-	T* GetComponent()
+	T& GetComponent()
 	{
 		static_assert(std::is_base_of_v<Component, T>, "T must be of type Component");
 
-		T* component = nullptr;
 		const auto iterator = m_Components.find(typeid(T).hash_code());
+		assert((iterator != m_Components.end()) && "This Component is not present.");
 
-		if (iterator != m_Components.end())
-		{
-			component = static_cast<T*>(iterator->second.get());
-		}
+		return *(static_cast<T*>(iterator->second.get()));
+	}
 
-		return component;
+	template<typename T>
+	bool HasComponent()
+	{
+		return m_Components.find(typeid(T).hash_code()) != m_Components.end();
 	}
 
 	template<typename T>
 	void RemoveComponent()
 	{
-		const size_t id = typeid(T).hash_code();
-		const auto iterator = m_Components.find(id);
-
-		if (iterator != m_Components.end())
-		{
-			m_Components.erase(id);
-		}
+		assert(HasComponent<T>() && "This Component is not present.");
+		m_Components.erase(typeid(T).hash_code());
 	}
 
 protected:

@@ -7,17 +7,18 @@ class Entity;
 class Component
 {
 public:
-	Component(const size_t id, Entity* entity)
-		: m_Id(id), m_Entity(entity)
-	{
-	}
+	Component() {}
 
-	virtual ~Component();
+	Component(Entity* entity)
+		: m_Entity(entity)
+	{}
+
+	virtual ~Component() { m_Entity = nullptr; }
 
 protected:
-	size_t m_Id = 0;
 	Entity* m_Entity = nullptr;
 
 private:
 
+	friend class Entity;
 };

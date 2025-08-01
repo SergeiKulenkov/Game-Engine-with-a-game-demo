@@ -1,5 +1,7 @@
 #include "Game/Game.h"
 
+////////////////////
+
 int main()
 {
 	Game::Init("Game Template");
