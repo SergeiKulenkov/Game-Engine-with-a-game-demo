@@ -402,9 +402,9 @@ static void FramePresent(ImGui_ImplVulkanH_Window* wd)
 
 ////////////////////////////
 
-Engine::Engine(std::string_view name)
+Engine::Engine(std::string_view name, const uint16_t width, const uint16_t height)
 {
-    Init(name);
+    Init(name, width, height);
 }
 
 Engine::~Engine()
@@ -412,7 +412,7 @@ Engine::~Engine()
     Shutdown();
 }
 
-void Engine::Init(std::string_view name)
+void Engine::Init(std::string_view name, const uint16_t width, const uint16_t height)
 {
     glfwSetErrorCallback(glfw_error_callback);
     if (!glfwInit())
@@ -481,8 +481,6 @@ void Engine::Init(std::string_view name)
 
 void Engine::Shutdown()
 {
-    m_Entites.clear();
-
     // Cleanup
     VkResult err = vkDeviceWaitIdle(g_Device);
     check_vk_result(err);
@@ -508,7 +506,7 @@ void Engine::Shutdown()
     m_Running = false;
 }
 
-void Engine::Run()
+void Engine::RunScene()
 {
     m_Running = true;
     ImGui_ImplVulkanH_Window* wd = &g_MainWindowData;
@@ -517,10 +515,8 @@ void Engine::Run()
     while (!glfwWindowShouldClose(m_Window) && m_Running)
     {
         glfwPollEvents();
-        for (auto & object : m_Entites)
-        {
-            object->Update(m_TimeStep);
-        }
+
+        m_Scene->Update(m_TimeStep);
 
         // Resize swap chain?
         int fb_width, fb_height;
@@ -546,10 +542,7 @@ void Engine::Run()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        //for (auto& object : m_Entites)
-        //{
-        //    object->Draw();
-        //}
+        m_Scene->Render();
 
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();

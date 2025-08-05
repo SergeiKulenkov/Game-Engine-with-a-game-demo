@@ -1,6 +1,6 @@
 #include "Player.h"
 
-#include <Component/Tag.h>
+#include <Scene/Component/Tag.h>
 
 ////////////////////
 
@@ -8,6 +8,11 @@ Player::Player()
 {
 	m_Transform = AddComponent<Transform>(defaultPosition).GetTransformData();
 	AddComponent<Tag>(defaultTag.data());
+}
+
+void Player::OnInit()
+{
+	// access Scene to create new Entity
 }
 
 void Player::Update(float deltaTime)

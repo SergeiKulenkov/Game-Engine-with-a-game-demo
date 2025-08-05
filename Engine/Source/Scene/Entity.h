@@ -2,15 +2,21 @@
 #include <unordered_map>
 #include <memory>
 
-#include "../Component/Component.h"
+#include "Component/Component.h"
 
 ////////////////////
+
+class Scene;
 
 class Entity
 {
 public:
-	Entity();
-	virtual ~Entity();
+	virtual ~Entity()
+	{
+		m_Scene = nullptr;
+	}
+
+	virtual void OnInit() {}
 
 	virtual void Update(float deltaTime) {}
 
@@ -51,8 +57,23 @@ public:
 	}
 
 protected:
+	Entity() = default;
+
+	size_t m_Id = 0;
+
+	Scene* m_Scene = nullptr;
+
 	std::unordered_map<size_t, std::unique_ptr<Component>> m_Components;
 
 private:
+	void Init(const size_t id, Scene* scene)
+	{
+		m_Id = id;
+		m_Scene = scene;
+		OnInit();
+	}
 
+	////////////////////
+
+	friend class Scene;
 };

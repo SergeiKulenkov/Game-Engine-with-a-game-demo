@@ -1,7 +1,7 @@
 #pragma once
 #include <random>
 
-#include <Engine/Engine.h>
+#include <Scene/Scene.h>
 
 #include "../Player/Player.h"
 
@@ -41,18 +41,16 @@ class Game
 public:
 	~Game();
 
-	static void Init(std::string_view name);
+	static void Init();
 
 	static void Shutdown();
 
 	static Game& Get();
 
-	void Run();
+	std::shared_ptr<Scene> GetScene() { return m_Scene; }
 
 private:
-	Game(std::string_view name);
+	Game();
 
-	std::unique_ptr<Engine> m_Engine;
-
-	std::shared_ptr<Player> m_Player = std::make_shared<Player>();
+	std::shared_ptr<Scene> m_Scene = std::make_shared<Scene>();
 };

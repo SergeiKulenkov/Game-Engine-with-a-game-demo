@@ -16,25 +16,19 @@ namespace Random
 
 static Game* s_Instance = nullptr;
 
-Game::Game(std::string_view name)
+Game::Game()
 {
-	m_Engine = std::make_unique<Engine>(name);
-	m_Engine->AddEntity(m_Player);
+	m_Scene->CreateEntity<Player>();
 }
 
 Game::~Game()
 {
 }
 
-void Game::Init(std::string_view name)
+void Game::Init()
 {
 	assert(!s_Instance);
-	s_Instance = new Game(name);
-}
-
-void Game::Run()
-{
-	m_Engine->Run();
+	s_Instance = new Game();
 }
 
 void Game::Shutdown()

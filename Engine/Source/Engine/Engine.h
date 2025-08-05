@@ -7,7 +7,7 @@
 #include <vulkan/vulkan.h>
 #include <imgui.h>
 
-#include "../Entity/Entity.h"
+#include "../Scene/Scene.h"
 
 struct GLFWwindow;
 
@@ -19,20 +19,18 @@ class Engine
 {
 public:
 	Engine() = delete;
-	Engine(std::string_view name);
+	Engine(std::string_view name, const uint16_t width, const uint16_t height);
 
 	~Engine();
 
 	Engine(const Engine& engine) = delete;
 	Engine& operator=(const Engine& engine) = delete;
 
-	void Run();
+	void RunScene();
 
-	void AddEntity(std::shared_ptr<Entity> object) { m_Entites.emplace_back(object); }
+	void InitScene(const std::shared_ptr<Scene>& scene) { m_Scene = scene; }
 
 	GLFWwindow* GetWindow() { return m_Window; }
-
-	ImVec2 GetWindowSize() const { return ImVec2(width, height); }
 
 	static VkInstance GetInstance();
 	static VkPhysicalDevice GetPhysicalDevice();
@@ -44,12 +42,10 @@ public:
 	static void SubmitResourceFree(std::function<void()>&& func);
 
 private:
-	void Init(std::string_view name = "");
+	void Init(std::string_view name, const uint16_t width, const uint16_t height);
 
 	void Shutdown();
 
-	static constexpr uint16_t width = 1920;
-	static constexpr uint16_t height = 1080;
 	static constexpr ImVec4 clearColour = ImVec4(135 / 255.f, 138 / 255.f, 131 / 255.f, 1.00f);
 
 	bool m_Running = false;
@@ -59,5 +55,6 @@ private:
 	float m_LastFrameTime = 0.0f;
 
 	GLFWwindow* m_Window = nullptr;
-	std::vector<std::shared_ptr<Entity>> m_Entites;
+
+	std::shared_ptr<Scene> m_Scene = std::make_shared<Scene>();
 };

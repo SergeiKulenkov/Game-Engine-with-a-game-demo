@@ -33,16 +33,24 @@ public:
 		: Component(entity)
 	{
 		m_TransformData->position = position;
-		m_TransformData->position = position;
+		m_TransformData->rotation = rotation;
 	}
 
 	Transform(Entity* entity, const TransformData& transformData)
-		: Component(entity), m_TransformData(std::make_shared<TransformData>(transformData))
-	{}
+		: Component(entity)
+	{
+		m_TransformData->position = transformData.position;
+		m_TransformData->rotation = transformData.rotation;
+		m_TransformData->scale = transformData.scale;
+	}
 
 	Transform(Entity* entity, const Transform& transform)
-		: Component(entity), m_TransformData(std::make_shared<TransformData>(transform.m_TransformData))
-	{}
+		: Component(entity)
+	{
+		m_TransformData->position = transform.m_TransformData->position;
+		m_TransformData->rotation = transform.m_TransformData->rotation;
+		m_TransformData->scale = transform.m_TransformData->scale;
+	}
 
 	virtual ~Transform() override {}
 

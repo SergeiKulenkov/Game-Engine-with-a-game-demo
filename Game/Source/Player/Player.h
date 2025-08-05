@@ -3,16 +3,21 @@
 
 #include <glm/glm.hpp>
 
-#include <Entity/Entity.h>
-#include <Component/Transform.h>
+#include <Scene/Entity.h>
+#include <Scene/Component/Transform.h>
 
 ////////////////////
+
+class Scene;
 
 class Player : public Entity
 {
 public:
 	Player();
 
+	~Player() {}
+
+	void OnInit() override;
 	void Update(float deltaTime) override;
 
 private:
