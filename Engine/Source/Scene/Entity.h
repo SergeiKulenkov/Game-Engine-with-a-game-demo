@@ -7,6 +7,7 @@
 ////////////////////
 
 class Scene;
+struct RendererDebug;
 
 class Entity
 {
@@ -16,9 +17,11 @@ public:
 		m_Scene = nullptr;
 	}
 
-	virtual void OnInit() {}
-
 	virtual void Update(float deltaTime) {}
+
+	// used for drawing debug primitives
+	// use Colour struct to select a colour or convert to uint32_t
+	virtual void DrawDebug(const RendererDebug& rendererDebug) {}
 
 	template<typename T, typename... Args>
 	T& AddComponent(Args&&... args)
@@ -46,6 +49,7 @@ public:
 	template<typename T>
 	bool HasComponent()
 	{
+		static_assert(std::is_base_of_v<Component, T>, "T must be of type Component");
 		return m_Components.find(typeid(T).hash_code()) != m_Components.end();
 	}
 
@@ -58,6 +62,10 @@ public:
 
 protected:
 	Entity() = default;
+
+	// called after setting the Scene pointer
+	// can be used to access Scene methods for the first time
+	virtual void OnInit() {}
 
 	size_t m_Id = 0;
 

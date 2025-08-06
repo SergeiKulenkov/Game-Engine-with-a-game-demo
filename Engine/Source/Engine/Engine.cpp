@@ -481,6 +481,8 @@ void Engine::Init(std::string_view name, const uint16_t width, const uint16_t he
 
 void Engine::Shutdown()
 {
+    m_Scene->Clear();
+
     // Cleanup
     VkResult err = vkDeviceWaitIdle(g_Device);
     check_vk_result(err);

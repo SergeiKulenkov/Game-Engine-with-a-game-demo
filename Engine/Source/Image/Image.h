@@ -53,6 +53,3 @@ private:
 
 	std::string m_Filepath;
 };
-
-
-

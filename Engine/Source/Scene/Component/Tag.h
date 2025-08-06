@@ -23,8 +23,5 @@ public:
 	void SetTag(const std::string& tag) { m_Tag = tag; }
 
 private:
-
-	////////////////////
-
 	std::string m_Tag = "";
 };
