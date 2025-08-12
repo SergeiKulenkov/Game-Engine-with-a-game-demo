@@ -1,4 +1,5 @@
 #include <Engine/Engine.h>
+#include <Input/InputManager.h>
 #include "Game/Game.h"
 
 ////////////////////
@@ -13,6 +14,8 @@ int main()
 {
 	Engine engine(windowTitle, windowWidth, windowHeight);
 	Game::Init();
+	InputManager inputManager;
+	inputManager.Init(engine.GetWindow());
 
 	engine.InitScene(Game::Get().GetScene());
 	engine.RunScene();
