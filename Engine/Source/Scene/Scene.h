@@ -1,8 +1,10 @@
 #pragma once
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <glm/glm.hpp>
 
 #include "Entity.h"
+#include "Physics.h"
 #include "Component/Sprite.h"
 
 ////////////////////
@@ -61,6 +63,8 @@ public:
 		{
 			entity->Update(deltaTime);
 		}
+
+		m_Physics.Update(deltaTime);
 	}
 
 	void Render()
@@ -78,24 +82,53 @@ public:
 		}
 	}
 
+	// the returned pointer should be used to set up components
+	// to store the newly created Entity it should be converted to a weak_ptr
 	template<typename T>
-	T& CreateEntity()
+	std::shared_ptr<Entity> CreateEntity()
 	{
 		static_assert(std::is_base_of_v<Entity, T>, "T must be of type Entity.");
 
 		const size_t id = m_Entities.size() + 1;
-		m_Entities.emplace(id, std::make_unique<T>());
+		m_Entities.emplace(id, std::make_shared<T>());
+		m_Entities[id]->Init(id, this);
 
-		T& newEntity = *(static_cast<T*>(m_Entities[id].get()));
-		newEntity.Init(id, this);
-
-		return newEntity;
+		return m_Entities[id];
 	}
+
+	void RemoveEntity(const size_t id)
+	{
+		m_Entities.erase(id);
+	}
+
+	void RegisterCollider(Collider& collider)
+	{
+		m_Physics.AddCollider(collider);
+	}
+
+	glm::vec2 GetScreenSize()
+	{
+		glm::vec2 size = glm::vec2(0, 0);
+		if (ImGui::GetCurrentWindowRead() != nullptr)
+		{
+			ImVec2 windowSize = ImGui::GetWindowSize();
+			size = glm::vec2(windowSize.x, windowSize.y);
+		}
+		else size = m_DefauleScreenSize;
+
+		return size;
+	}
+
+	void SetDefaultScreenSize(const glm::vec2& size) { m_DefauleScreenSize = size; }
 
 private:
 	ImDrawList* m_DrawList = nullptr;
 
 	RendererDebug m_RendererDebug;
 
-	std::unordered_map<size_t, std::unique_ptr<Entity>> m_Entities;
+	Physics m_Physics;
+
+	glm::vec2 m_DefauleScreenSize = glm::vec2(0 , 0);
+
+	std::unordered_map<size_t, std::shared_ptr<Entity>> m_Entities;
 };

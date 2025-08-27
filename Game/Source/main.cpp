@@ -17,7 +17,9 @@ int main()
 	InputManager inputManager;
 	inputManager.Init(engine.GetWindow());
 
+	Game::Get().SetSceneDefaultSize(glm::vec2(windowWidth, windowHeight));
 	engine.InitScene(Game::Get().GetScene());
+	Game::Get().Start();
 	engine.RunScene();
 
 	Game::Shutdown();

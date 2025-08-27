@@ -1,4 +1,6 @@
 #include "Game.h"
+#include "../Environment/EnvironmentManager.h"
+#include "../Player/Player.h"
 
 ////////////////////
 
@@ -6,7 +8,6 @@ static Game* s_Instance = nullptr;
 
 Game::Game()
 {
-	m_Scene->CreateEntity<Player>();
 }
 
 Game::~Game()
@@ -29,4 +30,10 @@ Game& Game::Get()
 {
 	assert(s_Instance);
 	return *s_Instance;
+}
+
+void Game::Start()
+{
+	m_Scene->CreateEntity<Player>();
+	m_Scene->CreateEntity<EnvironmentManager>();
 }

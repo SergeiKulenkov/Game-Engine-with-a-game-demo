@@ -1,6 +1,7 @@
 #pragma once
 #include <unordered_map>
 #include <memory>
+#include <assert.h>
 
 #include "Component/Component.h"
 
@@ -8,20 +9,26 @@
 
 class Scene;
 struct RendererDebug;
+class Collider;
+struct Collision;
 
 class Entity
 {
 public:
-	virtual ~Entity()
-	{
-		m_Scene = nullptr;
-	}
+	Entity() = default;
+
+	virtual ~Entity();
+
+	// use this method ro manually delete entities
+	void Destroy(size_t id);
 
 	virtual void Update(float deltaTime) {}
 
 	// used for drawing debug primitives
 	// use Colour struct to select a colour or convert to uint32_t
 	virtual void DrawDebug(const RendererDebug& rendererDebug) {}
+
+	virtual void OnCollision(const std::shared_ptr<Collision>& other) {}
 
 	template<typename T, typename... Args>
 	T& AddComponent(Args&&... args)
@@ -60,26 +67,25 @@ public:
 		m_Components.erase(typeid(T).hash_code());
 	}
 
-protected:
-	Entity() = default;
+	void RegisterCollider(Collider& collider);
 
+	size_t GetId() const { return m_Id; }
+
+protected:
 	// called after setting the Scene pointer
 	// can be used to access Scene methods for the first time
 	virtual void OnInit() {}
 
 	size_t m_Id = 0;
 
+	// useing a raw pointer because can't get a shared_ptr<Scene> here
+	// and entities have the same lifetime as Scene so they won't try to access it after it's destroyed
 	Scene* m_Scene = nullptr;
 
 	std::unordered_map<size_t, std::unique_ptr<Component>> m_Components;
 
 private:
-	void Init(const size_t id, Scene* scene)
-	{
-		m_Id = id;
-		m_Scene = scene;
-		OnInit();
-	}
+	void Init(const size_t id, Scene* scene);
 
 	////////////////////
 

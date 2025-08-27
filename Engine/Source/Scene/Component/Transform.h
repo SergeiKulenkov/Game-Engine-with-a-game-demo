@@ -19,17 +19,7 @@ struct TransformData
 class Transform : public Component
 {
 public:
-	Transform(Entity* entity)
-		: Component(entity)
-	{}
-
-	Transform(Entity* entity, const glm::vec2& position)
-		: Component(entity)
-	{
-		m_TransformData->position = position;
-	}
-
-	Transform(Entity* entity, const glm::vec2& position, const glm::vec2& rotation)
+	Transform(Entity* entity, const glm::vec2& position = glm::vec2(0, 0), const glm::vec2& rotation = glm::vec2(1, 0))
 		: Component(entity)
 	{
 		m_TransformData->position = position;

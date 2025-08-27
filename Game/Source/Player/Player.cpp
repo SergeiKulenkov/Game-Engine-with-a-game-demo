@@ -3,6 +3,7 @@
 #include <Input/InputManager.h>
 #include <Scene/Component/Tag.h>
 #include <Scene/Component/Sprite.h>
+#include <Scene/Component/Collider.h>
 #include <Scene/Scene.h>
 #include <Utility/Utility.h>
 
@@ -17,7 +18,11 @@ Player::Player()
 
 void Player::OnInit()
 {
+	// add colliders here becasuee they need to be registered
 	// access Scene to create new Entity
+	
+	AddComponent<CircleCollider>(14.f, true);
+	//AddComponent<BoxCollider>(glm::vec2(25.f, 25.f), true);
 }
 
 void Player::Update(float deltaTime)
@@ -45,6 +50,10 @@ void Player::Update(float deltaTime)
 	m_Transform->position += m_Transform->rotation * speed;
 }
 
+//void Player::OnCollision(const std::shared_ptr<Collision>& other)
+//{
+//}
+
 glm::vec2 Player::GetMovementInput() const
 {
 	glm::vec2 input = glm::vec2(0, 0);
@@ -60,8 +69,18 @@ glm::vec2 Player::GetMovementInput() const
 	return input;
 }
 
-//void Player::DrawDebug(const RendererDebug& rendererDebug)
-//{
-//	rendererDebug.DrawCircle(m_Transform->position, 28.f, Colour::purple);
-//	rendererDebug.DrawLine(m_Transform->position, m_Transform->position + m_Transform->rotation * 40.f, Colour::green);
-//}
+void Player::DrawDebug(const RendererDebug& rendererDebug)
+{
+	// draw box collider
+	//const std::array<glm::vec2, 4> vertices = GetComponent<BoxCollider>().GetVertices();
+	//for (size_t i = 0; i < vertices.size(); i++)
+	//{
+	//	rendererDebug.DrawLine(vertices[i], vertices[(i + 1) % vertices.size()], Colour::green);
+	//}
+
+	// draw circle collider
+	rendererDebug.DrawCircle(m_Transform->position, GetComponent<CircleCollider>().GetRadius(), Colour::green);
+
+	// draw player's direction
+	//rendererDebug.DrawLine(m_Transform->position, m_Transform->position + m_Transform->rotation * 30.f, Colour::green);
+}

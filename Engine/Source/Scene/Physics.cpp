@@ -1,0 +1,318 @@
+#include "Physics.h"
+#include <limits>
+
+#include "Component/Collider.h"
+
+////////////////////
+
+void Physics::Update(float deltaTime)
+{
+	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
+	{
+		if (!m_Colliders[indexA]->IsEnabled()) continue;
+
+		for (size_t indexB = indexA + 1; indexB < m_Colliders.size(); indexB++)
+		{
+			if (!m_Colliders[indexB]->IsEnabled() ||
+				(!m_Colliders[indexA]->IsDynamic() && !m_Colliders[indexB]->IsDynamic()))
+			{
+				continue;
+			}
+
+			std::shared_ptr<Collision> collision = std::make_shared<Collision>();
+			Collide(indexA, indexB, collision);
+			if (collision->detected) Resolve(indexA, indexB, collision);
+		}
+	}
+}
+
+void Physics::Collide(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
+{
+	const ShapeType shapeA = m_Colliders[indexA]->GetType();
+	const ShapeType shapeB = m_Colliders[indexB]->GetType();
+
+	if (shapeA == ShapeType::Box)
+	{
+		if (shapeB == ShapeType::Box)
+		{
+			CheckRectangleVsRectangle(indexA, indexB, collision);
+		}
+		else if (shapeB == ShapeType::Circle)
+		{
+			CheckCircleVsRectangle(indexB, indexA, collision);
+		}
+	}
+	else if (shapeA == ShapeType::Circle)
+	{
+		if (shapeB == ShapeType::Box)
+		{
+			CheckCircleVsRectangle(indexA, indexB, collision);
+		}
+		else if (shapeB == ShapeType::Circle)
+		{
+			CheckCircleVsCircle(indexA, indexB, collision);
+		}
+	}
+}
+
+void Physics::Resolve(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
+{
+	if (m_Colliders[indexA]->IsDynamic() && !m_Colliders[indexB]->IsDynamic())
+	{
+		m_Colliders[indexA]->MoveEntity((-1.f) * collision->normal * collision->depth);
+		collision->entity = m_Colliders[indexB]->GetEntity();
+		m_Colliders[indexA]->OnCollision(collision);
+	}
+	else if (m_Colliders[indexB]->IsDynamic() && !m_Colliders[indexA]->IsDynamic())
+	{
+		m_Colliders[indexB]->MoveEntity(collision->normal * collision->depth);
+		collision->entity = m_Colliders[indexA]->GetEntity();
+		m_Colliders[indexA]->OnCollision(collision);
+	}
+	else
+	{
+		m_Colliders[indexA]->MoveEntity((-1.f) * collision->normal * collision->depth / 2.f);
+		collision->entity = m_Colliders[indexB]->GetEntity();
+		m_Colliders[indexA]->OnCollision(collision);
+
+		std::shared_ptr<Collision> collision2 = std::make_shared<Collision>(*collision);
+		m_Colliders[indexB]->MoveEntity(collision2->normal * collision2->depth / 2.f);
+		collision2->entity = m_Colliders[indexA]->GetEntity();
+		m_Colliders[indexB]->OnCollision(collision2);
+	}
+}
+
+void Physics::CheckRectangleVsRectangle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
+{
+	const BoxCollider* rectangleA = dynamic_cast<BoxCollider*>(m_Colliders[indexA]);
+	const BoxCollider* rectangleB = dynamic_cast<BoxCollider*>(m_Colliders[indexB]);
+
+	const std::array<glm::vec2, 4> verticesA = rectangleA->GetVertices();
+	const std::array<glm::vec2, 4> verticesB = rectangleB->GetVertices();
+
+	bool collided = CheckSAT(verticesA, verticesB, collision);
+	if (collided) collided = CheckSAT(verticesB, verticesA, collision);
+
+	if (collided)
+	{
+		collision->detected = true;
+		const glm::vec2 positionA = rectangleA->GetPosition();
+		const glm::vec2 positionB = rectangleB->GetPosition();
+
+		if (glm::dot(positionB - positionA, collision->normal) < 0.f)
+		{
+			collision->normal *= -1;
+		}
+	}
+}
+
+void Physics::Physics::CheckCircleVsRectangle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
+{
+	const CircleCollider* circle = dynamic_cast<CircleCollider*>(m_Colliders[indexA]);
+	const BoxCollider* rectangle = dynamic_cast<BoxCollider*>(m_Colliders[indexB]);
+
+	bool collided = CheckSAT(circle->GetPosition(), circle->GetRadius(), rectangle->GetVertices(), collision);
+	if (collided)
+	{
+		collision->detected = true;
+		const glm::vec2 positionA = circle->GetPosition();
+		const glm::vec2 positionB = rectangle->GetPosition();
+		float dotProduct = 0.f;
+		if (indexA < indexB)
+		{
+			dotProduct = glm::dot(positionB - positionA, collision->normal);
+		}
+		else
+		{
+			dotProduct = glm::dot(positionA - positionB, collision->normal);
+		}
+
+		if (dotProduct < 0.f)
+		{
+			collision->normal *= -1;
+		}
+	}
+}
+
+void Physics::Physics::CheckCircleVsCircle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
+{
+	const CircleCollider* circleA = dynamic_cast<CircleCollider*>(m_Colliders[indexA]);
+	const CircleCollider* circleB = dynamic_cast<CircleCollider*>(m_Colliders[indexB]);
+
+	const glm::vec2 centerA = circleA->GetPosition();
+	const glm::vec2 centerB = circleB->GetPosition();
+	const float radiusA = circleA->GetRadius();
+	const float radiusB = circleB->GetRadius();
+
+	collision->detected = CheckCircles(centerA, radiusA, centerB, radiusB, collision);
+}
+
+void Physics::ProjectVertices(const std::array<glm::vec2, 4>& vertices, const glm::vec2& axis, float& min, float& max)
+{
+	min = std::numeric_limits<float>::max();
+	max = -std::numeric_limits<float>::max();
+	for (const glm::vec2& vertex : vertices)
+	{
+		const float projection = glm::dot(vertex, axis);
+		if (projection < min)
+		{
+			min = projection;
+		}
+		if (projection > max)
+		{
+			max = projection;
+		}
+	}
+}
+
+void Physics::ProjectCircle(const glm::vec2& center, const float radius, const glm::vec2& axis, float& min, float& max)
+{
+	const glm::vec2 distanceOnAxis = axis * radius;
+	const glm::vec2 rightBorder = center + distanceOnAxis;
+	const glm::vec2 leftBorder = center - distanceOnAxis;
+
+	min = glm::dot(rightBorder, axis);
+	max = glm::dot(leftBorder, axis);
+	if (min > max)
+	{
+		float tmp = min;
+		min = max;
+		max = tmp;
+	}
+}
+
+glm::vec2 Physics::FindClosestPointOnRectangle(const glm::vec2& circleCenter, const std::array<glm::vec2, 4>& vertices)
+{
+	glm::vec2 result = glm::vec2(0, 0);
+	float minDistance = std::numeric_limits<float>::max();
+	float distance = 0.f;
+
+	for (const glm::vec2& vertex : vertices)
+	{
+		distance = glm::distance(vertex, circleCenter);
+		if (distance < minDistance)
+		{
+			minDistance = distance;
+			result = vertex;
+		}
+	}
+
+	return result;
+}
+
+bool Physics::CheckSAT(const std::array<glm::vec2, 4>& verticesA, const std::array<glm::vec2, 4>& verticesB, const std::shared_ptr<Collision>& collision)
+{
+	collision->depth = std::numeric_limits<float>::max();
+	bool collided = true;
+
+	glm::vec2 axis = glm::vec2(0, 0);
+	glm::vec2 edge = glm::vec2(0, 0);
+	float axisDepth = 0.f;
+	float minA = 0.f;
+	float maxA = 0.f;
+	float minB = 0.f;
+	float maxB = 0.f;
+
+	for (size_t i = 0; i < verticesA.size(); i++)
+	{
+		edge = verticesA[(i + 1) % verticesA.size()] - verticesA[i];
+		// normal of each edge
+		axis = glm::normalize(glm::vec2(-edge.y, edge.x));
+
+		ProjectVertices(verticesA, axis, minA, maxA);
+		ProjectVertices(verticesB, axis, minB, maxB);
+
+		if (minA >= maxB || minB >= maxA)
+		{
+			collided = false;
+			break;
+		}
+		else
+		{
+			axisDepth = glm::min(maxB - minA, maxA - minB);
+			if (axisDepth < collision->depth)
+			{
+				collision->depth = axisDepth;
+				collision->normal = axis;
+			}
+		}
+	}
+
+	return collided;
+}
+
+bool Physics::CheckSAT(const glm::vec2& circleCenter, const float radius, const std::array<glm::vec2, 4>& vertices, const std::shared_ptr<Collision>& collision)
+{
+	collision->depth = std::numeric_limits<float>::max();
+	bool collided = true;
+
+	glm::vec2 axis = glm::vec2(0, 0);
+	glm::vec2 edge = glm::vec2(0, 0);
+	float axisDepth = 0.f;
+	float minA = 0.f;
+	float maxA = 0.f;
+	float minB = 0.f;
+	float maxB = 0.f;
+
+	for (size_t i = 0; i < vertices.size(); i++)
+	{
+		edge = vertices[(i + 1) % vertices.size()] - vertices[i];
+		// normal of each edge
+		axis = glm::normalize(glm::vec2(-edge.y, edge.x));
+
+		ProjectVertices(vertices, axis, minA, maxA);
+		ProjectCircle(circleCenter, radius, axis, minB, maxB);
+
+		if (minA >= maxB || minB >= maxA)
+		{
+			collided = false;
+			break;
+		}
+		else
+		{
+			axisDepth = glm::min(maxB - minA, maxA - minB);
+			if (axisDepth < collision->depth)
+			{
+				collision->depth = axisDepth;
+				collision->normal = axis;
+			}
+		}
+	}
+
+	axis = glm::normalize(FindClosestPointOnRectangle(circleCenter, vertices) - circleCenter);
+	ProjectVertices(vertices, axis, minA, maxA);
+	ProjectCircle(circleCenter, radius, axis, minB, maxB);
+
+	if (minA >= maxB || minB >= maxA)
+	{
+		collided = false;
+	}
+	else
+	{
+		axisDepth = glm::min(maxB - minA, maxA - minB);
+		if (axisDepth < collision->depth)
+		{
+			collision->depth = axisDepth;
+			collision->normal = axis;
+		}
+	}
+
+	return collided;
+}
+
+bool Physics::CheckCircles(const glm::vec2& centerA, const float radiusA, const glm::vec2& centerB, const float radiusB, const std::shared_ptr<Collision>& collision)
+{
+	bool collided = false;
+
+	const float distance = glm::distance(centerA, centerB);
+	const float radiiSum = radiusA + radiusB;
+
+	if (distance < radiiSum)
+	{
+		collided = true;
+		collision->normal = glm::normalize(centerB - centerA);
+		collision->depth = radiiSum - distance;
+	}
+
+	return collided;
+}

@@ -15,7 +15,7 @@ concept Floating = std::is_floating_point_v<T> && !std::is_same_v<T, bool>;
 
 namespace Random
 {
-	uint32_t RandomNumber(uint32_t input)
+	inline uint32_t RandomNumber(uint32_t input)
 	{
 		uint32_t state = input * 747796405u + 2891336453u;
 		uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
@@ -23,7 +23,7 @@ namespace Random
 	}
 
 	template<Integral T>
-	T RandomInRange(const T min, const T max)
+	inline T RandomInRange(const T min, const T max)
 	{
 		thread_local std::mt19937 generator(std::random_device{} ());
 		std::uniform_int_distribution<T> distribution(min, max);
@@ -31,7 +31,7 @@ namespace Random
 	}
 
 	template<Floating T>
-	T RandomInRange(const T min, const T max)
+	inline T RandomInRange(const T min, const T max)
 	{
 		thread_local std::mt19937 generator(std::random_device{} ());
 		std::uniform_real_distribution<T> distribution(min, max);
@@ -39,14 +39,35 @@ namespace Random
 	}
 }
 
+////////////////////
+
+struct PairCosSin
+{
+	float cos = 0.f;
+	float sin = 0.f;
+};
+
+////////////////////
+
 namespace Vector
 {
-	glm::vec2 Rotate(const glm::vec2& vector, const float angle)
+	inline glm::vec2 Rotate(const glm::vec2& vector, const float cos, const float sin)
+	{
+		return glm::vec2(vector.x * cos - vector.y * sin, 
+						vector.x * sin + vector.y * cos);
+	}
+
+	inline glm::vec2 Rotate(const glm::vec2& vector, const float angle)
 	{
 		const float cos = glm::cos(angle);
 		const float sin = glm::sin(angle);
-		const float newX = vector.x * cos - vector.y * sin;
-		const float newY = vector.x * sin + vector.y * cos;
-		return glm::vec2(newX, newY);
+		return glm::vec2(vector.x * cos - vector.y * sin,
+						vector.x * sin + vector.y * cos);
+	}
+
+	inline PairCosSin GetCosAndSinFromVector(const glm::vec2& vector)
+	{
+		const float length = glm::length(vector);
+		return PairCosSin(vector.x / length, vector.y / length);
 	}
 }

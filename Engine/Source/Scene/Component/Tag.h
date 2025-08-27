@@ -8,11 +8,7 @@
 class Tag : public Component
 {
 public:
-	Tag(Entity* entity)
-		: Component(entity)
-	{}
-
-	Tag(Entity* entity, const std::string& tag)
+	Tag(Entity* entity, const std::string& tag = "")
 		: Component(entity), m_Tag(tag)
 	{}
 
