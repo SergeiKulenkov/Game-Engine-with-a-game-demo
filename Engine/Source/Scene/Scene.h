@@ -1,11 +1,9 @@
 #pragma once
 #include <imgui.h>
-#include <imgui_internal.h>
 #include <glm/glm.hpp>
 
 #include "Entity.h"
 #include "Physics.h"
-#include "Component/Sprite.h"
 
 ////////////////////
 
@@ -57,30 +55,9 @@ public:
 
 	void Clear() { m_Entities.clear(); }
 
-	void Update(float deltaTime)
-	{
-		for (auto& [id, entity] : m_Entities)
-		{
-			entity->Update(deltaTime);
-		}
+	void Update(float deltaTime);
 
-		m_Physics.Update(deltaTime);
-	}
-
-	void Render()
-	{
-		// GetBackgroundDrawList() doesn't return nullptr, so no need to check for it
-		m_DrawList = ImGui::GetBackgroundDrawList();
-		for (auto& [id, entity] : m_Entities)
-		{
-			if (entity->HasComponent<Sprite>())
-			{
-				entity->GetComponent<Sprite>().Render(*m_DrawList);
-			}
-
-			entity->DrawDebug(m_RendererDebug);
-		}
-	}
+	void Render();
 
 	// the returned pointer should be used to set up components
 	// to store the newly created Entity it should be converted to a weak_ptr
@@ -96,28 +73,11 @@ public:
 		return m_Entities[id];
 	}
 
-	void RemoveEntity(const size_t id)
-	{
-		m_Entities.erase(id);
-	}
+	void RemoveEntity(const size_t id) { m_Entities.erase(id); }
 
-	void RegisterCollider(Collider& collider)
-	{
-		m_Physics.AddCollider(collider);
-	}
+	void RegisterCollider(Collider& collider) { m_Physics.AddCollider(collider); }
 
-	glm::vec2 GetScreenSize()
-	{
-		glm::vec2 size = glm::vec2(0, 0);
-		if (ImGui::GetCurrentWindowRead() != nullptr)
-		{
-			ImVec2 windowSize = ImGui::GetWindowSize();
-			size = glm::vec2(windowSize.x, windowSize.y);
-		}
-		else size = m_DefauleScreenSize;
-
-		return size;
-	}
+	glm::vec2 GetScreenSize() const;
 
 	void SetDefaultScreenSize(const glm::vec2& size) { m_DefauleScreenSize = size; }
 

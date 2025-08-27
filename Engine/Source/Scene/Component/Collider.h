@@ -101,7 +101,7 @@ public:
 		const PairCosSin pairCosSin = Vector::GetCosAndSinFromVector(m_TransformData->rotation);
 		for (glm::vec2& vertex : vertices)
 		{
-			vertex = m_TransformData->position + Vector::Rotate(vertex - m_TransformData->position, pairCosSin.cos, pairCosSin.sin);
+			vertex = m_TransformData->position + Vector::Rotate(vertex - m_TransformData->position, pairCosSin);
 		}
 
 		return vertices;

@@ -59,7 +59,7 @@ private:
 
 		for (ImVec2& position : m_ImageQuadPositions)
 		{
-			rotated = Vector::Rotate(glm::vec2(position.x - m_TransformData->position.x, position.y - m_TransformData->position.y), pairCosSin.cos, pairCosSin.sin);
+			rotated = Vector::Rotate(glm::vec2(position.x - m_TransformData->position.x, position.y - m_TransformData->position.y), pairCosSin);
 			position.x = m_TransformData->position.x + rotated.x;
 			position.y = m_TransformData->position.y + rotated.y;
 		}

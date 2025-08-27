@@ -57,6 +57,12 @@ namespace Vector
 						vector.x * sin + vector.y * cos);
 	}
 
+	inline glm::vec2 Rotate(const glm::vec2& vector, const PairCosSin pairCosSin)
+	{
+		return glm::vec2(vector.x * pairCosSin.cos - vector.y * pairCosSin.sin,
+						vector.x * pairCosSin.sin + vector.y * pairCosSin.cos);
+	}
+
 	inline glm::vec2 Rotate(const glm::vec2& vector, const float angle)
 	{
 		const float cos = glm::cos(angle);
