@@ -2,11 +2,14 @@
 #include <imgui_internal.h>
 
 #include "Component/Sprite.h"
+#include "../Timer/Timer.h"
 
 ////////////////////
 
 void Scene::Update(float deltaTime)
 {
+	Timer timer("scene update");
+
 	for (auto& [id, entity] : m_Entities)
 	{
 		entity->Update(deltaTime);
