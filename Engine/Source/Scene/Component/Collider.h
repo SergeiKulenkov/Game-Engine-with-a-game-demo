@@ -108,7 +108,7 @@ public:
 	}
 
 private:
-	glm::vec2 m_Size = glm::vec2(0, 0);
+	glm::vec2 m_Size = glm::vec2(0.f, 0.f);
 };
 
 ////////////////////

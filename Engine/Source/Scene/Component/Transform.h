@@ -9,9 +9,9 @@
 
 struct TransformData
 {
-	glm::vec2 position = glm::vec2(0, 0);
-	glm::vec2 rotation = glm::vec2(1, 0);
-	glm::vec2 scale = glm::vec2(1, 1);
+	glm::vec2 position = glm::vec2(0.f, 0.f);
+	glm::vec2 rotation = glm::vec2(1.f, 0.f);
+	glm::vec2 scale = glm::vec2(1.f, 1.f);
 };
 
 ////////////////////
@@ -19,7 +19,7 @@ struct TransformData
 class Transform : public Component
 {
 public:
-	Transform(Entity* entity, const glm::vec2& position = glm::vec2(0, 0), const glm::vec2& rotation = glm::vec2(1, 0))
+	Transform(Entity* entity, const glm::vec2& position = glm::vec2(0.f, 0.f), const glm::vec2& rotation = glm::vec2(1.f, 0.f))
 		: Component(entity)
 	{
 		m_TransformData->position = position;

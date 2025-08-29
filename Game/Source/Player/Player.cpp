@@ -19,10 +19,13 @@ Player::Player()
 void Player::OnInit()
 {
 	// add colliders here becasuee they need to be registered
-	// access Scene to create new Entity
+	// access Scene to create new Entity or call other methods
 	
 	AddComponent<CircleCollider>(14.f, true);
 	//AddComponent<BoxCollider>(glm::vec2(25.f, 25.f), true);
+
+	m_Scene->RegisterDebugWindowField("Player's Max Speed", &m_MaxSpeed, true);
+	m_Scene->RegisterDebugWindowField("Player's Current Speed", &m_Speed);
 }
 
 void Player::Update(float deltaTime)
@@ -30,15 +33,15 @@ void Player::Update(float deltaTime)
 	const glm::vec2 input = GetMovementInput();
 	if (input.y == 1)
 	{
-		speed += acceleration * deltaTime;
+		m_Speed += acceleration * deltaTime;
 	}
 	else if (input.y == -1)
 	{
-		speed += deceleration * deltaTime * (-1);
+		m_Speed += deceleration * deltaTime * (-1);
 	}
 	else if (input.y == 0)
 	{
-		speed += linearDrag * deltaTime * (-1);
+		m_Speed += linearDrag * deltaTime * (-1);
 	}
 	
 	if (input.x != 0)
@@ -46,8 +49,8 @@ void Player::Update(float deltaTime)
 		m_Transform->rotation = Vector::Rotate(m_Transform->rotation, rotationRate * deltaTime * input.x);
 	}
 
-	speed = glm::clamp(speed, 0.f, maxSpeed);
-	m_Transform->position += m_Transform->rotation * speed;
+	m_Speed = glm::clamp(m_Speed, 0.f, m_MaxSpeed);
+	m_Transform->position += m_Transform->rotation * m_Speed;
 }
 
 //void Player::OnCollision(const std::shared_ptr<Collision>& other)

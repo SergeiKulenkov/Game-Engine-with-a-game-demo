@@ -10,6 +10,13 @@ bool InputManager::IsKeyDown(const KeyCode keycode)
 	return (state == GLFW_PRESS || state == GLFW_REPEAT);
 }
 
+bool InputManager::IsKeyUp(const KeyCode keycode)
+{
+	assert(m_Window);
+	const int state = glfwGetKey(m_Window, (int)keycode);
+	return (state == GLFW_RELEASE);
+}
+
 bool InputManager::IsMouseButtonDown(const MouseButton button)
 {
 	assert(m_Window);

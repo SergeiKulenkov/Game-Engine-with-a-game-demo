@@ -95,7 +95,7 @@ private:
 	static constexpr float boundaryThickness = 16.f;
 	static constexpr float minObstaclePosition = 200.f;
 	static constexpr float maxObstaclePosition = 800.f;
-	static constexpr float minObstacleSize = 20.f;
+	static constexpr float minObstacleSize = 30.f;
 	static constexpr float maxObstacleSize = 60.f;
 	// values are multiplied by screen size
 	static constexpr std::array<glm::vec2, numberOfBoundaries> boundaryPositions = { glm::vec2(0.5f, 0), glm::vec2(1, 0.5f), glm::vec2(0.5f, 1), glm::vec2(0, 0.5f) };

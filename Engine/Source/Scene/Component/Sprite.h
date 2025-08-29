@@ -55,7 +55,7 @@ private:
 	void RotateImageQuad()
 	{
 		const PairCosSin pairCosSin = Vector::GetCosAndSinFromVector(m_TransformData->rotation);
-		glm::vec2 rotated = glm::vec2(0, 0);
+		glm::vec2 rotated = glm::vec2(0.f, 0.f);
 
 		for (ImVec2& position : m_ImageQuadPositions)
 		{
@@ -67,11 +67,11 @@ private:
 
 	////////////////////
 
-	static constexpr std::array<ImVec2, 4> m_ImageQuadUVs = { ImVec2(0, 0), ImVec2(1, 0), ImVec2(1, 1), ImVec2(0, 1) };
+	static constexpr std::array<ImVec2, 4> m_ImageQuadUVs = { ImVec2(0.f, 0.f), ImVec2(1.f, 0.f), ImVec2(1.f, 1.f), ImVec2(0.f, 1.f) };
 
 	std::shared_ptr<Image> m_Image;
-	std::array<ImVec2, 4> m_ImageQuadPositions = { ImVec2(), ImVec2(), ImVec2(), ImVec2() };
+	std::array<ImVec2, 4> m_ImageQuadPositions = { ImVec2(0.f, 0.f), ImVec2(0.f, 0.f), ImVec2(0.f, 0.f), ImVec2(0.f, 0.f) };
 
-	glm::vec2 m_HalfSize = glm::vec2(0, 0);
+	glm::vec2 m_HalfSize = glm::vec2(0.f, 0.f);
 	std::shared_ptr<TransformData> m_TransformData = std::make_shared<TransformData>();
 };

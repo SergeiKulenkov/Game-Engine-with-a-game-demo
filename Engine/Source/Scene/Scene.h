@@ -4,6 +4,8 @@
 
 #include "Entity.h"
 #include "Physics.h"
+#include "../Utility/DebugWindow.h"
+#include "../Utility/Timer.h"
 
 ////////////////////
 
@@ -53,6 +55,8 @@ public:
 		m_DrawList = nullptr;
 	}
 
+	void Start(bool displayDebugWindow = false);
+
 	void Clear() { m_Entities.clear(); }
 
 	void Update(float deltaTime);
@@ -81,6 +85,8 @@ public:
 
 	void SetDefaultScreenSize(const glm::vec2& size) { m_DefauleScreenSize = size; }
 
+	void RegisterDebugWindowField(const std::string& name, float* value, bool editable = false, const uint8_t numberOfFractionalDigits = 1);
+
 private:
 	ImDrawList* m_DrawList = nullptr;
 
@@ -88,7 +94,15 @@ private:
 
 	Physics m_Physics;
 
-	glm::vec2 m_DefauleScreenSize = glm::vec2(0 , 0);
+	std::unique_ptr<DebugWindow> m_DebugWindow;
+
+	Timer m_Timer;
+
+	glm::vec2 m_DefauleScreenSize = glm::vec2(0.f , 0.f);
 
 	std::unordered_map<size_t, std::shared_ptr<Entity>> m_Entities;
+
+	bool m_IsTabPressed = false;
+
+	float m_FrameTime = 0.f;
 };

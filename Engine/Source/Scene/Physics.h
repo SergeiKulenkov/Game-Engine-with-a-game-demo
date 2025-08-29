@@ -15,8 +15,8 @@ struct Collision
 {
 	bool detected = false;
 	Entity* entity = nullptr;
-	glm::vec2 contact = glm::vec2(0, 0);
-	glm::vec2 normal = glm::vec2(0, 0);
+	glm::vec2 contact = glm::vec2(0.f, 0.f);
+	glm::vec2 normal = glm::vec2(0.f, 0.f);
 	float depth = 0.f;
 };
 
