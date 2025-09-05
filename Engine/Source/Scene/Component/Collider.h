@@ -34,6 +34,7 @@ public:
 	void Enable() { m_Enabled = true; }
 
 	ShapeType GetType() const { return m_Type; }
+	size_t GetId() const { return m_Id; }
 
 	glm::vec2 GetPosition() const { return m_TransformData->position; }
 	glm::vec2& GetPosition() { return m_TransformData->position; }
@@ -57,12 +58,14 @@ protected:
 		assert(m_Entity->HasComponent<Transform>() && "Tranform Component is not present.");
 
 		m_TransformData = m_Entity->GetComponent<Transform>().GetTransformData();
-		m_Entity->RegisterCollider(*this);
+		m_Id = m_Entity->RegisterCollider(*this);
 	}
 
 	virtual ~Collider() {};
 
 	////////////////////
+
+	size_t m_Id;
 
 	bool m_Dynamic = false;
 

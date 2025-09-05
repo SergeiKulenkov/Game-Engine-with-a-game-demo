@@ -3,8 +3,18 @@
 
 #include "Component/Sprite.h"
 #include "../Input/InputManager.h"
+#include "Component/Collider.h"
 
 ////////////////////
+
+Scene::Scene()
+{
+}
+
+Scene::~Scene()
+{
+	m_DrawList = nullptr;
+}
 
 void Scene::Start(bool displayDebugWindow)
 {
@@ -18,7 +28,7 @@ void Scene::Start(bool displayDebugWindow)
 void Scene::Update(float deltaTime)
 {
 	m_Timer.Start();
-	ScopedTimer timer("update", true);
+	//ScopedTimer timer("update", true);
 
 	for (auto& [id, entity] : m_Entities)
 	{
@@ -43,7 +53,7 @@ void Scene::Update(float deltaTime)
 
 void Scene::Render()
 {
-	ScopedTimer timer("render", true);
+	//ScopedTimer timer("render", true);
 	// GetBackgroundDrawList() doesn't return nullptr, so no need to check for it
 	m_DrawList = ImGui::GetBackgroundDrawList();
 	for (auto& [id, entity] : m_Entities)
@@ -58,6 +68,20 @@ void Scene::Render()
 
 	m_FrameTime = m_Timer.ElapsedMilliseconds();
 	if (m_DebugWindow) m_DebugWindow->Render();
+}
+
+void Scene::DestroyEntity(const size_t id)
+{
+	if (m_Entities[id]->HasComponent<BoxCollider>())
+	{
+		m_Physics.RemoveCollider(m_Entities[id]->GetComponent<BoxCollider>().GetId());
+	}
+	else if (m_Entities[id]->HasComponent<CircleCollider>())
+	{
+		m_Physics.RemoveCollider(m_Entities[id]->GetComponent<CircleCollider>().GetId());
+	}
+
+	m_Entities.erase(id);
 }
 
 glm::vec2 Scene::GetScreenSize() const

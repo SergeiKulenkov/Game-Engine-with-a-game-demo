@@ -5,6 +5,7 @@
 #include <Scene/Component/Sprite.h>
 #include <Scene/Component/Collider.h>
 #include <Scene/Scene.h>
+#include <Scene/Physics.h>
 #include <Utility/Utility.h>
 
 ////////////////////
@@ -74,6 +75,16 @@ glm::vec2 Player::GetMovementInput() const
 
 void Player::DrawDebug(const RendererDebug& rendererDebug)
 {
+	// testing raycast
+	//std::shared_ptr<RaycastHit> hitResult = std::make_shared<RaycastHit>();
+	//const glm::vec2 origin = m_Transform->position + m_Transform->rotation * 20.f;
+	//const float length = 80.f;
+	//rendererDebug.DrawLine(origin, origin + m_Transform->rotation * length, Colour::green);
+	//if (m_Scene->Raycast(origin, m_Transform->rotation, length, hitResult))
+	//{
+	//	rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);
+	//}
+
 	// draw box collider
 	//const std::array<glm::vec2, 4> vertices = GetComponent<BoxCollider>().GetVertices();
 	//for (size_t i = 0; i < vertices.size(); i++)

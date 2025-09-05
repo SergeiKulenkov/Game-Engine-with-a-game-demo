@@ -48,12 +48,9 @@ struct RendererDebug
 class Scene
 {
 public:
-	Scene() {}
+	Scene();
 
-	~Scene()
-	{
-		m_DrawList = nullptr;
-	}
+	~Scene();
 
 	void Start(bool displayDebugWindow = false);
 
@@ -70,16 +67,21 @@ public:
 	{
 		static_assert(std::is_base_of_v<Entity, T>, "T must be of type Entity.");
 
-		const size_t id = m_Entities.size() + 1;
+		const size_t id = m_Entities.size();
 		m_Entities.emplace(id, std::make_shared<T>());
 		m_Entities[id]->Init(id, this);
 
 		return m_Entities[id];
 	}
 
-	void RemoveEntity(const size_t id) { m_Entities.erase(id); }
+	// an Entity should be deleted by using this method
+	// because Scene owns entities, deleting them some other way won't work
+	void DestroyEntity(const size_t id);
 
-	void RegisterCollider(Collider& collider) { m_Physics.AddCollider(collider); }
+	size_t RegisterCollider(Collider& collider) { return m_Physics.AddCollider(collider); }
+
+	bool Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult) { return m_Physics.Raycast(ray, hitResult); }
+	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, const std::shared_ptr<RaycastHit>& hitResult) { return m_Physics.Raycast(origin, direction, length, hitResult); }
 
 	glm::vec2 GetScreenSize() const;
 

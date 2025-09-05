@@ -22,12 +22,31 @@ struct Collision
 
 ////////////////////
 
+struct Ray
+{
+	glm::vec2 origin = glm::vec2(0, 0);
+	glm::vec2 direction = glm::vec2(1, 0);
+	float length = 0.f;
+};
+
+struct RaycastHit
+{
+	glm::vec2 contactPoint = glm::vec2(0, 0);
+	Entity* entity = nullptr;
+};
+
+////////////////////
+
 class Physics
 {
 public:
 	void Update(float deltaTime);
 
-	void AddCollider(Collider& collider) { m_Colliders.push_back(&collider); }
+	size_t AddCollider(Collider& collider);
+	void RemoveCollider(size_t id) { m_Colliders.erase(m_Colliders.begin() + id); }
+
+	bool Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult);
+	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, const std::shared_ptr<RaycastHit>& hitResult) { return Raycast(Ray(origin, direction, length), hitResult); }
 
 private:
 	Physics() {}

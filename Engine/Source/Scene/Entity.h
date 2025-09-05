@@ -19,9 +19,6 @@ public:
 
 	virtual ~Entity();
 
-	// use this method ro manually delete entities
-	void Destroy(size_t id);
-
 	virtual void Update(float deltaTime) {}
 
 	// used for drawing debug primitives
@@ -67,7 +64,7 @@ public:
 		m_Components.erase(typeid(T).hash_code());
 	}
 
-	void RegisterCollider(Collider& collider);
+	size_t RegisterCollider(Collider& collider);
 
 	size_t GetId() const { return m_Id; }
 
