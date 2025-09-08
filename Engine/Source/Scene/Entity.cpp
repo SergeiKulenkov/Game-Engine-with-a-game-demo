@@ -3,18 +3,14 @@
 
 ////////////////////
 
-Entity::~Entity()
+size_t Entity::RegisterCollider(const size_t colliderType)
 {
-	m_Scene = nullptr;
+	const std::shared_ptr sharedScene = m_Scene.lock();
+	assert(sharedScene && "This Entity's reference to the Scene is null");
+	return sharedScene->RegisterCollider(std::dynamic_pointer_cast<Collider>(m_Components[colliderType]));
 }
 
-size_t Entity::RegisterCollider(Collider& collider)
-{
-	assert(m_Scene && "This Entity's reference to the Scene is null");
-	return m_Scene->RegisterCollider(collider);
-}
-
-void Entity::Init(const size_t id, Scene* scene)
+void Entity::Init(const size_t id, const std::shared_ptr<Scene>& scene)
 {
 	m_Id = id;
 	m_Scene = scene;

@@ -25,7 +25,12 @@ class Collider : public Component
 public:
 	Collider() = delete;
 
-	virtual void OnCollision(const std::shared_ptr<Collision>& other) { m_Entity->OnCollision(other); }
+	virtual void OnCollision(const std::shared_ptr<Collision>& other)
+	{
+		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
+		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
+		sharedEntity->OnCollision(other);
+	}
 
 	bool IsDynamic() const { return m_Dynamic; }
 	bool IsEnabled() const { return m_Enabled; }
@@ -51,17 +56,21 @@ public:
 	}
 
 protected:
-	Collider(Entity* entity, bool isStatic, bool enabled = true)
-		: Component(entity), m_Dynamic(isStatic)
-	{
-		// Entity must have a Transform to use a Collider
-		assert(m_Entity->HasComponent<Transform>() && "Tranform Component is not present.");
-
-		m_TransformData = m_Entity->GetComponent<Transform>().GetTransformData();
-		m_Id = m_Entity->RegisterCollider(*this);
-	}
+	Collider(bool isStatic, bool enabled = true)
+		: m_Dynamic(isStatic)
+	{}
 
 	virtual ~Collider() {};
+
+	virtual void OnInit() override
+	{
+		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
+		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
+
+		// Entity must have a Transform to use a Collider
+		assert(sharedEntity->HasComponent<Transform>() && "Tranform Component is not present.");
+		m_TransformData = sharedEntity->GetComponent<Transform>()->GetTransformData();
+	}
 
 	////////////////////
 
@@ -83,10 +92,18 @@ private:
 class BoxCollider : public Collider
 {
 public:
-	BoxCollider(Entity* entity, const glm::vec2& size, bool isDynamic = false, bool enabled = true)
-		: Collider(entity, isDynamic, enabled), m_Size(size)
+	BoxCollider(const glm::vec2& size, bool isDynamic = false, bool enabled = true)
+		: Collider(isDynamic, enabled), m_Size(size)
 	{
 		m_Type = ShapeType::Box;
+	}
+
+	virtual void OnInit() override
+	{
+		Collider::OnInit();
+		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
+		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
+		m_Id = sharedEntity->RegisterCollider(typeid(BoxCollider).hash_code());
 	}
 
 	glm::vec2 GetSize() const { return m_Size; }
@@ -119,10 +136,18 @@ private:
 class CircleCollider : public Collider
 {
 public:
-	CircleCollider(Entity* entity, const float radius = 0.f, bool isDynamic = false, bool enabled = true)
-		: Collider(entity, isDynamic, enabled), m_Radius(radius)
+	CircleCollider(const float radius = 0.f, bool isDynamic = false, bool enabled = true)
+		: Collider(isDynamic, enabled), m_Radius(radius)
 	{
 		m_Type = ShapeType::Circle;
+	}
+
+	virtual void OnInit() override
+	{
+		Collider::OnInit();
+		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
+		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
+		m_Id = sharedEntity->RegisterCollider(typeid(CircleCollider).hash_code());
 	}
 
 	float GetRadius() const { return m_Radius; }

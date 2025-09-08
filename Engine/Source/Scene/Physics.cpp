@@ -1,60 +1,56 @@
 #include "Physics.h"
 #include <limits>
 
-#include "Component/Collider.h"
-
 ////////////////////
 
 void Physics::Update(float deltaTime)
 {
 	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
 	{
-		if (!m_Colliders[indexA]->IsEnabled()) continue;
+		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
+		assert(sharedColliderA && "Can't get Collider's shared pointer because it's no longer valid.");
+		if (!sharedColliderA->IsEnabled()) continue;
 
 		for (size_t indexB = indexA + 1; indexB < m_Colliders.size(); indexB++)
 		{
-			if (!m_Colliders[indexB]->IsEnabled() ||
-				(!m_Colliders[indexA]->IsDynamic() && !m_Colliders[indexB]->IsDynamic()))
+			const std::shared_ptr<Collider> sharedColliderB = m_Colliders[indexB].lock();
+			assert(sharedColliderB && "Can't get Collider's shared pointer because it's no longer valid.");
+
+			if (!sharedColliderB->IsEnabled() ||
+				(!sharedColliderA->IsDynamic() && !sharedColliderB->IsDynamic()))
 			{
 				continue;
 			}
 
 			std::shared_ptr<Collision> collision = std::make_shared<Collision>();
-			Collide(indexA, indexB, collision);
+			Collide(indexA, sharedColliderA->GetType(), indexB, sharedColliderB->GetType(), collision);
 			if (collision->detected) Resolve(indexA, indexB, collision);
 		}
 	}
 }
 
-size_t Physics::AddCollider(Collider& collider)
+size_t Physics::AddCollider(const std::shared_ptr<Collider>& collider)
 {
-	m_Colliders.push_back(&collider);
-	return m_Colliders.size();
+	m_Colliders.push_back(collider);
+	return m_Colliders.size() - 1;
 }
 
 bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult)
 {
 	bool result = false;
-	bool infiniteRay = false;
-	glm::vec2 rayEnd = glm::vec2(0, 0);
-
-	if (ray.length == std::numeric_limits<float>::infinity() || 
-		ray.length == std::numeric_limits<float>::max())
-	{
-		infiniteRay = true;
-	}
-
-	if (infiniteRay) rayEnd = ray.origin + ray.direction;
-	else rayEnd = ray.origin + ray.direction * ray.length;
+	const bool infiniteRay = ((ray.length == std::numeric_limits<float>::infinity()) || (ray.length == std::numeric_limits<float>::max()));
+	const glm::vec2 rayEnd = infiniteRay ? (ray.origin + ray.direction) : (ray.origin + ray.direction * ray.length);
 
 	for (size_t i = 0; i < m_Colliders.size(); i++)
 	{
-		if (!m_Colliders[i]->IsEnabled()) continue;
+		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[i].lock();
+		assert(sharedColliderA && "Can't get Collider's shared pointer because it's no longer valid.");
+		if (!sharedColliderA->IsEnabled()) continue;
 
-		const ShapeType shape = m_Colliders[i]->GetType();
+		const ShapeType shape = sharedColliderA->GetType();
 		if (shape == ShapeType::Box)
 		{
-			const BoxCollider* rectangle = dynamic_cast<BoxCollider*>(m_Colliders[i]);
+			const std::shared_ptr<BoxCollider> rectangle = std::dynamic_pointer_cast<BoxCollider>(sharedColliderA);
 			const std::array<glm::vec2, 4> vertices = rectangle->GetVertices();
 
 			for (size_t j = 0; j < vertices.size(); j++)
@@ -94,7 +90,7 @@ bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResu
 		}
 		else if (shape == ShapeType::Circle)
 		{
-			const CircleCollider* circle = dynamic_cast<CircleCollider*>(m_Colliders[i]);
+			const std::shared_ptr<CircleCollider> circle = std::dynamic_pointer_cast<CircleCollider>(sharedColliderA);
 			const float radius = circle->GetRadius();
 			const glm::vec2 center = circle->GetPosition();
 			const glm::vec2 directionToCircle = ray.origin - center;
@@ -124,11 +120,8 @@ bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResu
 	return result;
 }
 
-void Physics::Collide(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
+void Physics::Collide(const size_t indexA, const ShapeType shapeA, const size_t indexB, const ShapeType shapeB, const std::shared_ptr<Collision>& collision)
 {
-	const ShapeType shapeA = m_Colliders[indexA]->GetType();
-	const ShapeType shapeB = m_Colliders[indexB]->GetType();
-
 	if (shapeA == ShapeType::Box)
 	{
 		if (shapeB == ShapeType::Box)
@@ -155,35 +148,45 @@ void Physics::Collide(const size_t indexA, const size_t indexB, const std::share
 
 void Physics::Resolve(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
 {
-	if (m_Colliders[indexA]->IsDynamic() && !m_Colliders[indexB]->IsDynamic())
+	const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
+	assert(sharedColliderA && "Can't get Collider's shared pointer because it's no longer valid.");
+	const std::shared_ptr<Collider> sharedColliderB = m_Colliders[indexB].lock();
+	assert(sharedColliderB && "Can't get Collider's shared pointer because it's no longer valid.");
+
+	if (sharedColliderA->IsDynamic() && !sharedColliderB->IsDynamic())
 	{
-		m_Colliders[indexA]->MoveEntity((-1.f) * collision->normal * collision->depth);
-		collision->entity = m_Colliders[indexB]->GetEntity();
-		m_Colliders[indexA]->OnCollision(collision);
+		sharedColliderA->MoveEntity((-1.f) * collision->normal * collision->depth);
+		collision->entity = sharedColliderB->GetEntity();
+		sharedColliderA->OnCollision(collision);
 	}
-	else if (m_Colliders[indexB]->IsDynamic() && !m_Colliders[indexA]->IsDynamic())
+	else if (sharedColliderB->IsDynamic() && !sharedColliderA->IsDynamic())
 	{
-		m_Colliders[indexB]->MoveEntity(collision->normal * collision->depth);
-		collision->entity = m_Colliders[indexA]->GetEntity();
-		m_Colliders[indexA]->OnCollision(collision);
+		sharedColliderB->MoveEntity(collision->normal * collision->depth);
+		collision->entity = sharedColliderA->GetEntity();
+		sharedColliderA->OnCollision(collision);
 	}
 	else
 	{
-		m_Colliders[indexA]->MoveEntity((-1.f) * collision->normal * collision->depth / 2.f);
-		collision->entity = m_Colliders[indexB]->GetEntity();
-		m_Colliders[indexA]->OnCollision(collision);
+		sharedColliderA->MoveEntity((-1.f) * collision->normal * collision->depth / 2.f);
+		collision->entity = sharedColliderB->GetEntity();
+		sharedColliderA->OnCollision(collision);
 
 		std::shared_ptr<Collision> collision2 = std::make_shared<Collision>(*collision);
-		m_Colliders[indexB]->MoveEntity(collision2->normal * collision2->depth / 2.f);
-		collision2->entity = m_Colliders[indexA]->GetEntity();
-		m_Colliders[indexB]->OnCollision(collision2);
+		sharedColliderB->MoveEntity(collision2->normal * collision2->depth / 2.f);
+		collision2->entity = sharedColliderA->GetEntity();
+		sharedColliderB->OnCollision(collision2);
 	}
 }
 
 void Physics::CheckRectangleVsRectangle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
 {
-	const BoxCollider* rectangleA = dynamic_cast<BoxCollider*>(m_Colliders[indexA]);
-	const BoxCollider* rectangleB = dynamic_cast<BoxCollider*>(m_Colliders[indexB]);
+	const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
+	assert(sharedColliderA && "Can't get Collider's shared pointer because it's no longer valid.");
+	const std::shared_ptr<Collider> sharedColliderB = m_Colliders[indexB].lock();
+	assert(sharedColliderB && "Can't get Collider's shared pointer because it's no longer valid.");
+
+	const std::shared_ptr<BoxCollider> rectangleA = std::dynamic_pointer_cast<BoxCollider>(sharedColliderA);
+	const std::shared_ptr<BoxCollider> rectangleB = std::dynamic_pointer_cast<BoxCollider>(sharedColliderB);
 
 	const std::array<glm::vec2, 4> verticesA = rectangleA->GetVertices();
 	const std::array<glm::vec2, 4> verticesB = rectangleB->GetVertices();
@@ -206,8 +209,13 @@ void Physics::CheckRectangleVsRectangle(const size_t indexA, const size_t indexB
 
 void Physics::Physics::CheckCircleVsRectangle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
 {
-	const CircleCollider* circle = dynamic_cast<CircleCollider*>(m_Colliders[indexA]);
-	const BoxCollider* rectangle = dynamic_cast<BoxCollider*>(m_Colliders[indexB]);
+	const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
+	assert(sharedColliderA && "Can't get Collider's shared pointer because it's no longer valid.");
+	const std::shared_ptr<Collider> sharedColliderB = m_Colliders[indexB].lock();
+	assert(sharedColliderB && "Can't get Collider's shared pointer because it's no longer valid.");
+
+	const std::shared_ptr<CircleCollider> circle = std::dynamic_pointer_cast<CircleCollider>(sharedColliderA);
+	const std::shared_ptr<BoxCollider> rectangle = std::dynamic_pointer_cast<BoxCollider>(sharedColliderB);
 
 	bool collided = CheckSAT(circle->GetPosition(), circle->GetRadius(), rectangle->GetVertices(), collision);
 	if (collided)
@@ -234,8 +242,13 @@ void Physics::Physics::CheckCircleVsRectangle(const size_t indexA, const size_t 
 
 void Physics::Physics::CheckCircleVsCircle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
 {
-	const CircleCollider* circleA = dynamic_cast<CircleCollider*>(m_Colliders[indexA]);
-	const CircleCollider* circleB = dynamic_cast<CircleCollider*>(m_Colliders[indexB]);
+	const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
+	assert(sharedColliderA && "Can't get Collider's shared pointer because it's no longer valid.");
+	const std::shared_ptr<Collider> sharedColliderB = m_Colliders[indexB].lock();
+	assert(sharedColliderB && "Can't get Collider's shared pointer because it's no longer valid.");
+
+	const std::shared_ptr<CircleCollider> circleA = std::dynamic_pointer_cast<CircleCollider>(sharedColliderA);
+	const std::shared_ptr<CircleCollider> circleB = std::dynamic_pointer_cast<CircleCollider>(sharedColliderB);
 
 	const glm::vec2 centerA = circleA->GetPosition();
 	const glm::vec2 centerB = circleB->GetPosition();

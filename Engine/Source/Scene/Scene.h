@@ -45,7 +45,7 @@ struct RendererDebug
 
 ////////////////////
 
-class Scene
+class Scene : public std::enable_shared_from_this<Scene>
 {
 public:
 	Scene();
@@ -69,7 +69,7 @@ public:
 
 		const size_t id = m_Entities.size();
 		m_Entities.emplace(id, std::make_shared<T>());
-		m_Entities[id]->Init(id, this);
+		m_Entities[id]->Init(id, shared_from_this());
 
 		return m_Entities[id];
 	}
@@ -78,7 +78,7 @@ public:
 	// because Scene owns entities, deleting them some other way won't work
 	void DestroyEntity(const size_t id);
 
-	size_t RegisterCollider(Collider& collider) { return m_Physics.AddCollider(collider); }
+	size_t RegisterCollider(const std::shared_ptr<Collider>& collider) { return m_Physics.AddCollider(collider); }
 
 	bool Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult) { return m_Physics.Raycast(ray, hitResult); }
 	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, const std::shared_ptr<RaycastHit>& hitResult) { return m_Physics.Raycast(origin, direction, length, hitResult); }

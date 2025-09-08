@@ -10,23 +10,19 @@
 
 ////////////////////
 
-Player::Player()
-{
-	m_Transform = AddComponent<Transform>(defaultPosition).GetTransformData();
-	AddComponent<Tag>(defaultTag.data());
-	AddComponent<Sprite>(spritePath);
-}
-
 void Player::OnInit()
 {
-	// add colliders here becasuee they need to be registered
-	// access Scene to create new Entity or call other methods
+	m_Transform = AddComponent<Transform>(defaultPosition)->GetTransformData();
+	AddComponent<Tag>(defaultTag.data());
+	AddComponent<Sprite>(spritePath);
 	
 	AddComponent<CircleCollider>(14.f, true);
 	//AddComponent<BoxCollider>(glm::vec2(25.f, 25.f), true);
 
-	m_Scene->RegisterDebugWindowField("Player's Max Speed", &m_MaxSpeed, true);
-	m_Scene->RegisterDebugWindowField("Player's Current Speed", &m_Speed);
+	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
+	assert(sharedScene && "This Entity's reference to the Scene is null");
+	sharedScene->RegisterDebugWindowField("Player's Max Speed", &m_MaxSpeed, true);
+	sharedScene->RegisterDebugWindowField("Player's Current Speed", &m_Speed);
 }
 
 void Player::Update(float deltaTime)
@@ -86,14 +82,14 @@ void Player::DrawDebug(const RendererDebug& rendererDebug)
 	//}
 
 	// draw box collider
-	//const std::array<glm::vec2, 4> vertices = GetComponent<BoxCollider>().GetVertices();
+	//const std::array<glm::vec2, 4> vertices = GetComponent<BoxCollider>()->GetVertices();
 	//for (size_t i = 0; i < vertices.size(); i++)
 	//{
 	//	rendererDebug.DrawLine(vertices[i], vertices[(i + 1) % vertices.size()], Colour::green);
 	//}
 
 	// draw circle collider
-	rendererDebug.DrawCircle(m_Transform->position, GetComponent<CircleCollider>().GetRadius(), Colour::green);
+	rendererDebug.DrawCircle(m_Transform->position, GetComponent<CircleCollider>()->GetRadius(), Colour::green);
 
 	// draw player's direction
 	//rendererDebug.DrawLine(m_Transform->position, m_Transform->position + m_Transform->rotation * 30.f, Colour::green);

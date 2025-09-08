@@ -12,12 +12,12 @@ struct RendererDebug;
 class Collider;
 struct Collision;
 
-class Entity
+class Entity : public std::enable_shared_from_this<Entity>
 {
 public:
-	Entity() = default;
+	Entity() {}
 
-	virtual ~Entity();
+	virtual ~Entity() {}
 
 	virtual void Update(float deltaTime) {}
 
@@ -28,26 +28,28 @@ public:
 	virtual void OnCollision(const std::shared_ptr<Collision>& other) {}
 
 	template<typename T, typename... Args>
-	T& AddComponent(Args&&... args)
+	std::shared_ptr<T> AddComponent(Args&&... args)
 	{
 		static_assert(std::is_base_of_v<Component, T>, "T must be of type Component.");
 		assert(!HasComponent<T>() && "This Component is already present.");
 
 		const size_t id = typeid(T).hash_code();
-		m_Components.emplace(id, std::make_unique<T>(this, std::forward<Args>(args)...));
+		m_Components.emplace(id, std::make_shared<T>(std::forward<Args>(args)...));
+		m_Components[id]->m_Entity = shared_from_this();
+		m_Components[id]->OnInit();
 
-		return *(static_cast<T*>(m_Components[id].get()));
+		return std::dynamic_pointer_cast<T>(m_Components[id]);
 	}
 
 	template<typename T>
-	T& GetComponent()
+	std::shared_ptr<T> GetComponent()
 	{
 		static_assert(std::is_base_of_v<Component, T>, "T must be of type Component");
 
 		const auto iterator = m_Components.find(typeid(T).hash_code());
 		assert((iterator != m_Components.end()) && "This Component is not present.");
 
-		return *(static_cast<T*>(iterator->second.get()));
+		return std::dynamic_pointer_cast<T>(iterator->second);
 	}
 
 	template<typename T>
@@ -64,25 +66,24 @@ public:
 		m_Components.erase(typeid(T).hash_code());
 	}
 
-	size_t RegisterCollider(Collider& collider);
+	size_t RegisterCollider(const size_t colliderType);
 
 	size_t GetId() const { return m_Id; }
 
 protected:
 	// called after setting the Scene pointer
 	// can be used to access Scene methods for the first time
+	// and to call AddComponent() because it requires an initialized shared_ptr to this Entity
 	virtual void OnInit() {}
 
 	size_t m_Id = 0;
 
-	// useing a raw pointer because can't get a shared_ptr<Scene> here
-	// and entities have the same lifetime as Scene so they won't try to access it after it's destroyed
-	Scene* m_Scene = nullptr;
+	std::weak_ptr<Scene> m_Scene;
 
-	std::unordered_map<size_t, std::unique_ptr<Component>> m_Components;
+	std::unordered_map<size_t, std::shared_ptr<Component>> m_Components;
 
 private:
-	void Init(const size_t id, Scene* scene);
+	void Init(const size_t id, const std::shared_ptr<Scene>& scene);
 
 	////////////////////
 

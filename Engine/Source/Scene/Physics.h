@@ -5,16 +5,17 @@
 
 #include <glm/glm.hpp>
 
+#include "Component/Collider.h"
+
 class Scene;
 class Entity;
-class Collider;
 
 ////////////////////
 
 struct Collision
 {
 	bool detected = false;
-	Entity* entity = nullptr;
+	std::weak_ptr<Entity> entity;
 	glm::vec2 contact = glm::vec2(0.f, 0.f);
 	glm::vec2 normal = glm::vec2(0.f, 0.f);
 	float depth = 0.f;
@@ -32,7 +33,7 @@ struct Ray
 struct RaycastHit
 {
 	glm::vec2 contactPoint = glm::vec2(0, 0);
-	Entity* entity = nullptr;
+	std::weak_ptr<Entity> entity;
 };
 
 ////////////////////
@@ -42,7 +43,7 @@ class Physics
 public:
 	void Update(float deltaTime);
 
-	size_t AddCollider(Collider& collider);
+	size_t AddCollider(const std::shared_ptr<Collider>& collider);
 	void RemoveCollider(size_t id) { m_Colliders.erase(m_Colliders.begin() + id); }
 
 	bool Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult);
@@ -53,7 +54,7 @@ private:
 
 	~Physics() {}
 
-	void Collide(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
+	void Collide(const size_t indexA, const ShapeType shapeA, const size_t indexB, const ShapeType shapeB, const std::shared_ptr<Collision>& collision);
 	void Resolve(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
 
 	void CheckRectangleVsRectangle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
@@ -74,7 +75,7 @@ private:
 
 	////////////////////
 
-	std::vector<Collider*> m_Colliders;
+	std::vector<std::weak_ptr<Collider>> m_Colliders;
 
 	friend class Scene;
 };

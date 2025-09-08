@@ -16,22 +16,21 @@
 class Sprite : public Component
 {
 public:
-	Sprite(Entity* entity, const std::string_view imagePath)
-		: Component(entity)
+	Sprite(const std::string_view imagePath)
 	{
-		Init(imagePath);
+		m_Image = std::make_shared<Image>(imagePath);
+		m_HalfSize = glm::vec2(static_cast<float>(m_Image->GetWidth() / 2), static_cast<float>(m_Image->GetHeight() / 2));
 	}
 
 	~Sprite() {}
 
-	void Init(const std::string_view imagePath)
+	virtual void OnInit() override
 	{
-		m_Image = std::make_shared<Image>(imagePath);
-		m_HalfSize = glm::vec2(static_cast<float>(m_Image->GetWidth() / 2), static_cast<float>(m_Image->GetHeight() / 2));
-
+		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
+		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
 		// Entity must have a Transform to render a Sprite
-		assert(m_Entity->HasComponent<Transform>() && "Tranform Component is not present.");
-		m_TransformData = m_Entity->GetComponent<Transform>().GetTransformData();
+		assert(sharedEntity->HasComponent<Transform>() && "Tranform Component is not present.");
+		m_TransformData = sharedEntity->GetComponent<Transform>()->GetTransformData();
 	}
 
 	void Render(ImDrawList& drawList)

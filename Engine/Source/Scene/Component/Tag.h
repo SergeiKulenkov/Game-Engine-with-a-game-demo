@@ -8,8 +8,8 @@
 class Tag : public Component
 {
 public:
-	Tag(Entity* entity, const std::string& tag = "")
-		: Component(entity), m_Tag(tag)
+	Tag(const std::string& tag = "")
+		: m_Tag(tag)
 	{}
 
 	virtual ~Tag() override {}

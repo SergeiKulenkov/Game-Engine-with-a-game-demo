@@ -60,7 +60,7 @@ void Scene::Render()
 	{
 		if (entity->HasComponent<Sprite>())
 		{
-			entity->GetComponent<Sprite>().Render(*m_DrawList);
+			entity->GetComponent<Sprite>()->Render(*m_DrawList);
 		}
 
 		entity->DrawDebug(m_RendererDebug);
@@ -74,11 +74,11 @@ void Scene::DestroyEntity(const size_t id)
 {
 	if (m_Entities[id]->HasComponent<BoxCollider>())
 	{
-		m_Physics.RemoveCollider(m_Entities[id]->GetComponent<BoxCollider>().GetId());
+		m_Physics.RemoveCollider(m_Entities[id]->GetComponent<BoxCollider>()->GetId());
 	}
 	else if (m_Entities[id]->HasComponent<CircleCollider>())
 	{
-		m_Physics.RemoveCollider(m_Entities[id]->GetComponent<CircleCollider>().GetId());
+		m_Physics.RemoveCollider(m_Entities[id]->GetComponent<CircleCollider>()->GetId());
 	}
 
 	m_Entities.erase(id);

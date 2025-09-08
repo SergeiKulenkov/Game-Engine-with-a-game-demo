@@ -36,8 +36,8 @@ public:
 				if (!field.editable) ImGui::Text(field.name.c_str(), *field.value);
 				else
 				{
-					ImGui::PushItemWidth(40.f);
-					ImGui::DragFloat(field.name.c_str(), field.value, 0.2f, 0.f, 15.f, "%.2f");
+					ImGui::PushItemWidth(fieldWidth);
+					ImGui::DragFloat(field.name.c_str(), field.value, speedOfDragFloat, minDragFloat, maxDragFloat, "%.2f");
 				}
 				ImGui::Separator();
 			}
@@ -55,6 +55,10 @@ public:
 
 private:
 	static constexpr std::string_view windowName = "Debug Window";
+	static constexpr float fieldWidth = 40.f;
+	static constexpr float minDragFloat = 0.f;
+	static constexpr float maxDragFloat = 15.f;
+	static constexpr float speedOfDragFloat = 0.2f;
 
 	std::vector<DebugField> m_Fields;
 

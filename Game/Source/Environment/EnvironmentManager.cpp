@@ -14,11 +14,13 @@ EnvironmentManager::EnvironmentManager()
 void EnvironmentManager::OnInit()
 {
 	std::shared_ptr<Entity> newEntity;
-	const glm::vec2 screenSize = m_Scene->GetScreenSize();
+	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
+	assert(sharedScene && "This Entity's reference to the Scene is null");
+	const glm::vec2 screenSize = sharedScene->GetScreenSize();
 
 	for (size_t i = 0; i < m_Boundaries.size(); i++)
 	{
-		newEntity = m_Scene->CreateEntity<Entity>();
+		newEntity = sharedScene->CreateEntity<Entity>();
 		newEntity->AddComponent<Transform>(boundaryPositions[i] * screenSize);
 		if (i % 2 == 0)
 		{
@@ -33,7 +35,7 @@ void EnvironmentManager::OnInit()
 	}
 	for (size_t i = 0; i < m_Obstacles.size(); i++)
 	{
-		newEntity = m_Scene->CreateEntity<Entity>();
+		newEntity = sharedScene->CreateEntity<Entity>();
 		newEntity->AddComponent<Transform>(glm::vec2(Random::RandomInRange<float>(minObstaclePosition, maxObstaclePosition),
 			Random::RandomInRange<float>(minObstaclePosition, maxObstaclePosition)));
 		if (i % 2 == 0)
@@ -57,7 +59,7 @@ void EnvironmentManager::DrawDebug(const RendererDebug& rendererDebug)
 		std::shared_ptr<Entity> boundary = weakBoundary.lock();
 		if (boundary)
 		{
-			const std::array<glm::vec2, 4> vertices = boundary->GetComponent<BoxCollider>().GetVertices();
+			const std::array<glm::vec2, 4> vertices = boundary->GetComponent<BoxCollider>()->GetVertices();
 			rendererDebug.DrawRectangle(vertices[0], vertices[2], Colour::green);
 		}
 	}
@@ -68,12 +70,12 @@ void EnvironmentManager::DrawDebug(const RendererDebug& rendererDebug)
 		{
 			if (i % 2 == 0)
 			{
-				const std::array<glm::vec2, 4> vertices = obstacle->GetComponent<BoxCollider>().GetVertices();
+				const std::array<glm::vec2, 4> vertices = obstacle->GetComponent<BoxCollider>()->GetVertices();
 				rendererDebug.DrawRectangle(vertices[0], vertices[2], Colour::green);
 			}
 			else
 			{
-				rendererDebug.DrawCircle(obstacle->GetComponent<Transform>().GetPosition(), obstacle->GetComponent<CircleCollider>().GetRadius(), Colour::green);
+				rendererDebug.DrawCircle(obstacle->GetComponent<Transform>()->GetPosition(), obstacle->GetComponent<CircleCollider>()->GetRadius(), Colour::green);
 			}
 		}
 	}

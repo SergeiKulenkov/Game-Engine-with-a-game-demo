@@ -1,4 +1,5 @@
 #pragma once
+#include <memory>
 
 ////////////////////
 
@@ -7,16 +8,21 @@ class Entity;
 class Component
 {
 public:
-	Component(Entity* entity)
-		: m_Entity(entity)
-	{}
+	Component() {}
 
-	virtual ~Component() { m_Entity = nullptr; }
+	virtual ~Component() {}
 
-	Entity* GetEntity() const { return m_Entity; }
+	std::shared_ptr<Entity> GetEntity() const
+	{
+		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
+		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
+		return sharedEntity;
+	}
 
 protected:
-	Entity* m_Entity = nullptr;
+	virtual void OnInit() {}
+
+	std::weak_ptr<Entity> m_Entity;
 
 private:
 	friend class Entity;

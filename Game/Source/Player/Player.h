@@ -13,7 +13,7 @@ class Scene;
 class Player : public Entity
 {
 public:
-	Player();
+	Player() {}
 
 	~Player() {}
 
