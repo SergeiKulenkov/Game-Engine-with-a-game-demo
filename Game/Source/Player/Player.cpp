@@ -21,8 +21,8 @@ void Player::OnInit()
 
 	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
 	assert(sharedScene && "This Entity's reference to the Scene is null");
-	sharedScene->RegisterDebugWindowField("Player's Max Speed", &m_MaxSpeed, true);
-	sharedScene->RegisterDebugWindowField("Player's Current Speed", &m_Speed);
+	sharedScene->RegisterEditableDebugWindowField("Player's Max Speed", &m_MaxSpeed, 12.f, 0.f, 2);
+	sharedScene->RegisterDebugWindowField("Player's Current Speed", &m_Speed, 2);
 }
 
 void Player::Update(float deltaTime)

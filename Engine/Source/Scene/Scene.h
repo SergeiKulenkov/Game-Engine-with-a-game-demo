@@ -87,7 +87,8 @@ public:
 
 	void SetDefaultScreenSize(const glm::vec2& size) { m_DefauleScreenSize = size; }
 
-	void RegisterDebugWindowField(const std::string& name, float* value, bool editable = false, const uint8_t numberOfFractionalDigits = 1);
+	void RegisterEditableDebugWindowField(const std::string& name, float* value, float max = 10.f, float min = 0.f, const uint8_t numberOfFractionalDigits = 1);
+	void RegisterDebugWindowField(const std::string& name, float* value, const uint8_t numberOfFractionalDigits = 1);
 
 private:
 	ImDrawList* m_DrawList = nullptr;

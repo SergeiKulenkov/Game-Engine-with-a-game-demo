@@ -1,15 +1,16 @@
-# Game and Engine Template
-
+# Game Engine prototype with a game demo
 ## Features:
-* Engine template with basic features described below
-* Entity Component System with basic components
-* Timer class
+* Engine prototype with features described below
+* Entity Component System with basic components—Transform, Tag, Sprite, Box and Circle Colliders
+* Controllable Timer—that can be started and asked for ellapsed time at any point—and ScopedTimer classes
 * Update loop with deltaTime
 * Input Manager class
 * Image class for rendering image files through ImGUI and vulkan
-* And Game template with a movable Player object—entity with a couple components
-* game window's title is set in the main() function located in main.cpp
-* game window's size is a constant config located in the Engine class
+* optional rendering of debug visuals for entities
+* Physics class for collision and raycast processing
+* dynamic—movable, resizable, can be hidden by pressing Tab—Debug window with an ability to register new displayble fields
+* And Game demo with a movable Player object—entity with a few components
+* game window's title and size are set in the main() function located in main.cpp
 
 ## Build system
 Premake script files for the Engine static library and the Game main project.
