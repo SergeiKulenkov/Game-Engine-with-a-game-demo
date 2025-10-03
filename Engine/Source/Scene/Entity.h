@@ -11,6 +11,7 @@ class Scene;
 struct RendererDebug;
 class Collider;
 struct Collision;
+class Rigidbody;
 
 class Entity : public std::enable_shared_from_this<Entity>
 {
@@ -63,10 +64,13 @@ public:
 	void RemoveComponent()
 	{
 		assert(HasComponent<T>() && "This Component is not present.");
-		m_Components.erase(typeid(T).hash_code());
+		const size_t id = typeid(T).hash_code();
+		m_Components[id]->OnRemove();
+		m_Components.erase(id);
 	}
 
 	size_t RegisterCollider(const size_t colliderType);
+	size_t RegisterRigidbody();
 
 	size_t GetId() const { return m_Id; }
 

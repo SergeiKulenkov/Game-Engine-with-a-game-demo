@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <assert.h>
 
 ////////////////////
 
@@ -21,6 +22,7 @@ public:
 
 protected:
 	virtual void OnInit() {}
+	virtual void OnRemove() {}
 
 	std::weak_ptr<Entity> m_Entity;
 

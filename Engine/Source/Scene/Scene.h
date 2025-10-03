@@ -7,6 +7,9 @@
 #include "../Utility/DebugWindow.h"
 #include "../Utility/Timer.h"
 
+class Collider;
+class Rigidbody;
+
 ////////////////////
 
 struct Colour
@@ -79,6 +82,7 @@ public:
 	void DestroyEntity(const size_t id);
 
 	size_t RegisterCollider(const std::shared_ptr<Collider>& collider) { return m_Physics.AddCollider(collider); }
+	size_t RegisterRigidbody(const std::shared_ptr<Rigidbody>& rigidbody) { return m_Physics.AddRigidbody(rigidbody); }
 
 	bool Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult) { return m_Physics.Raycast(ray, hitResult); }
 	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, const std::shared_ptr<RaycastHit>& hitResult) { return m_Physics.Raycast(origin, direction, length, hitResult); }

@@ -1,10 +1,20 @@
 #include "Physics.h"
 #include <limits>
 
+#include "../Utility/Utility.h"
+
 ////////////////////
 
 void Physics::Update(float deltaTime)
 {
+	for (std::weak_ptr<Rigidbody>& rigidbody : m_Rigidbodies)
+	{
+		const std::shared_ptr<Rigidbody> sharedRigidbody = rigidbody.lock();
+		assert(sharedRigidbody && "Can't get Rigidbody's shared pointer because it's no longer valid.");
+		sharedRigidbody->Update(deltaTime);
+	}
+
+	// check collisions
 	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
 	{
 		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
@@ -22,22 +32,36 @@ void Physics::Update(float deltaTime)
 				continue;
 			}
 
-			std::shared_ptr<Collision> collision = std::make_shared<Collision>();
-			Collide(indexA, sharedColliderA->GetType(), indexB, sharedColliderB->GetType(), collision);
-			if (collision->detected) Resolve(indexA, indexB, collision);
+			if (CheckAABBOverlap(sharedColliderA->GetAABB(), sharedColliderB->GetAABB()))
+			{
+				std::shared_ptr<Collision> collision = std::make_shared<Collision>();
+				Collide(indexA, sharedColliderA->GetType(), indexB, sharedColliderB->GetType(), collision);
+				if (collision->detected) ResolveCollision(indexA, indexB, collision);
+			}
 		}
 	}
 }
 
-size_t Physics::AddCollider(const std::shared_ptr<Collider>& collider)
+size_t Physics::AddCollider(const std::weak_ptr<Collider>& collider)
 {
 	m_Colliders.push_back(collider);
 	return m_Colliders.size() - 1;
 }
 
+size_t Physics::AddRigidbody(const std::weak_ptr<Rigidbody>& rigidbody)
+{
+	m_Rigidbodies.push_back(rigidbody);
+	return m_Rigidbodies.size() - 1;;
+}
+
 bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult)
 {
-	bool result = false;
+	hitResult->contactPoint = glm::vec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+	bool hasIntersected = false;
+	bool isIntersecting = false;
+	RaycastHit currentHitResult;
+	size_t resultIndex = 0;
+
 	const bool infiniteRay = ((ray.length == std::numeric_limits<float>::infinity()) || (ray.length == std::numeric_limits<float>::max()));
 	const glm::vec2 rayEnd = infiniteRay ? (ray.origin + ray.direction) : (ray.origin + ray.direction * ray.length);
 
@@ -50,74 +74,99 @@ bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResu
 		const ShapeType shape = sharedColliderA->GetType();
 		if (shape == ShapeType::Box)
 		{
-			const std::shared_ptr<BoxCollider> rectangle = std::dynamic_pointer_cast<BoxCollider>(sharedColliderA);
-			const std::array<glm::vec2, 4> vertices = rectangle->GetVertices();
-
-			for (size_t j = 0; j < vertices.size(); j++)
-			{
-				const glm::vec2 nextVertex = vertices[(j + 1) % vertices.size()];
-				// formula for line-line intersection
-				const float denominator = (vertices[j].x - nextVertex.x) * (ray.origin.y - rayEnd.y) - (vertices[j].y - nextVertex.y) * (ray.origin.x - rayEnd.x);
-				if (denominator == 0) continue;
-
-				const float t = ((vertices[j].x - ray.origin.x) * (ray.origin.y - rayEnd.y) - (vertices[j].y - ray.origin.y) * (ray.origin.x - rayEnd.x)) / denominator;
-				const float u = -((vertices[j].x - nextVertex.x) * (vertices[j].y - ray.origin.y) - (vertices[j].y - nextVertex.y) * (vertices[j].x - ray.origin.x)) / denominator;
-				if ((t >= 0.f) && (t <= 1.f))
-				{
-					if ((!infiniteRay && (u >= 0.f) && (u <= 1.0f)) ||
-						(infiniteRay && ((u >= 0.f))))
-					{
-						if (result)
-						{
-							const glm::vec2 newContactPoint = glm::vec2(vertices[j].x + t * (nextVertex.x - vertices[j].x), vertices[j].y + t * (nextVertex.y - vertices[j].y));
-							const glm::vec2 diff1 = glm::abs(ray.origin - newContactPoint);
-							const glm::vec2 diff2 = glm::abs(ray.origin - hitResult->contactPoint);
-							// avoiding square root for calculating distance
-							if (glm::dot(diff1, diff1) < glm::dot(diff2, diff2))
-							{
-								hitResult->contactPoint = newContactPoint;
-							}
-						}
-						else
-						{
-							hitResult->contactPoint = glm::vec2(vertices[j].x + t * (nextVertex.x - vertices[j].x), vertices[j].y + t * (nextVertex.y - vertices[j].y));
-							hitResult->entity = rectangle->GetEntity();
-							result = true;
-						}
-					}
-				}
-			}
+			isIntersecting = RaycastAgainstBox(std::dynamic_pointer_cast<BoxCollider>(sharedColliderA), ray.origin, rayEnd, infiniteRay, currentHitResult);
+			
 		}
 		else if (shape == ShapeType::Circle)
 		{
-			const std::shared_ptr<CircleCollider> circle = std::dynamic_pointer_cast<CircleCollider>(sharedColliderA);
-			const float radius = circle->GetRadius();
-			const glm::vec2 center = circle->GetPosition();
-			const glm::vec2 directionToCircle = ray.origin - center;
-			const glm::vec2 rayDirection = rayEnd - ray.origin;
+			isIntersecting = RaycastAgainstCircle(std::dynamic_pointer_cast<CircleCollider>(sharedColliderA), ray.origin, rayEnd, infiniteRay, currentHitResult);
+		}
 
-			const float a = glm::dot(rayDirection, rayDirection);
-			const float b = 2 * glm::dot(directionToCircle, rayDirection);
-			const float c = glm::dot(directionToCircle, directionToCircle) - radius * radius;
-			float discriminant = b * b - 4 * a * c;
-
-			if (discriminant >= 0)
+		if (isIntersecting)
+		{
+			if (!Vector::IsFirstPointCloser(ray.origin, hitResult->contactPoint, currentHitResult.contactPoint))
 			{
-				discriminant = glm::sqrt(discriminant);
-				// don't need the second solution cause this one is always the closest
-				const float solution1 = (-b - discriminant) / (2 * a);
-				if ((solution1 >= 0) && (solution1 <= 1) ||
-					(infiniteRay && (solution1 > 1)))
+				hitResult->contactPoint = currentHitResult.contactPoint;
+				resultIndex = i;
+				hasIntersected = true;
+			}
+		}
+	}
+
+	// better to set entity once at the end, than multiple times inside the loop
+	if (hasIntersected) hitResult->entity = m_Colliders[resultIndex].lock()->GetEntity();
+
+	return hasIntersected;
+}
+
+bool Physics::RaycastAgainstBox(const std::shared_ptr<BoxCollider>& box, const glm::vec2& rayOrigin, const glm::vec2& rayEnd, const bool infiniteRay, RaycastHit& hitResult)
+{
+	bool isIntersecting = false;
+	const std::array<glm::vec2, 4> vertices = box->GetVertices();
+
+	for (size_t i = 0; i < vertices.size(); i++)
+	{
+		const glm::vec2 nextVertex = vertices[(i + 1) % vertices.size()];
+		// formula for line-line intersection
+		const float denominator = (vertices[i].x - nextVertex.x) * (rayOrigin.y - rayEnd.y) - (vertices[i].y - nextVertex.y) * (rayOrigin.x - rayEnd.x);
+		if (denominator == 0) continue;
+
+		const float t = ((vertices[i].x - rayOrigin.x) * (rayOrigin.y - rayEnd.y) - (vertices[i].y - rayOrigin.y) * (rayOrigin.x - rayEnd.x)) / denominator;
+		const float u = -((vertices[i].x - nextVertex.x) * (vertices[i].y - rayOrigin.y) - (vertices[i].y - nextVertex.y) * (vertices[i].x - rayOrigin.x)) / denominator;
+		if ((t >= 0.f) && (t <= 1.f))
+		{
+			if ((!infiniteRay && (u >= 0.f) && (u <= 1.0f)) ||
+				(infiniteRay && ((u >= 0.f))))
+			{
+				if (isIntersecting)
 				{
-					hitResult->contactPoint = ray.origin + solution1 * rayDirection;
-					hitResult->entity = circle->GetEntity();
-					result = true;
+					const glm::vec2 newContactPoint = glm::vec2(vertices[i].x + t * (nextVertex.x - vertices[i].x), vertices[i].y + t * (nextVertex.y - vertices[i].y));
+					if (!Vector::IsFirstPointCloser(rayOrigin, hitResult.contactPoint, newContactPoint))
+					//const glm::vec2 diff1 = glm::abs(rayOrigin - newContactPoint);
+					//const glm::vec2 diff2 = glm::abs(rayOrigin - hitResult.contactPoint);
+					//// avoiding square root for calculating distance
+					//if (glm::dot(diff1, diff1) < glm::dot(diff2, diff2))
+					{
+						hitResult.contactPoint = newContactPoint;
+					}
+				}
+				else
+				{
+					hitResult.contactPoint = glm::vec2(vertices[i].x + t * (nextVertex.x - vertices[i].x), vertices[i].y + t * (nextVertex.y - vertices[i].y));
+					isIntersecting = true;
 				}
 			}
 		}
 	}
 
-	return result;
+	return isIntersecting;
+}
+
+bool Physics::RaycastAgainstCircle(const std::shared_ptr<CircleCollider> circle, const glm::vec2& rayOrigin, const glm::vec2& rayEnd, const bool infiniteRay, RaycastHit& hitResult)
+{
+	bool isIntersecting = false;
+	const glm::vec2 directionToCircle = rayOrigin - circle->GetPosition();
+	const glm::vec2 rayEndOffset = rayEnd - rayOrigin;
+
+	const float a = glm::dot(rayEndOffset, rayEndOffset);
+	const float b = 2 * glm::dot(directionToCircle, rayEndOffset);
+	const float c = glm::dot(directionToCircle, directionToCircle) - circle->GetRadius() * circle->GetRadius();
+	float discriminant = b * b - 4 * a * c;
+
+	if (discriminant >= 0)
+	{
+		discriminant = glm::sqrt(discriminant);
+		// don't need the second solution cause this one is always the closest
+		const float solution1 = (-b - discriminant) / (2 * a);
+		if ((solution1 >= 0) && (solution1 <= 1) ||
+			(infiniteRay && (solution1 > 1)))
+		{
+			hitResult.contactPoint = rayOrigin + solution1 * rayEndOffset;
+			isIntersecting = true;
+		}
+	}
+
+	return isIntersecting;
 }
 
 void Physics::Collide(const size_t indexA, const ShapeType shapeA, const size_t indexB, const ShapeType shapeB, const std::shared_ptr<Collision>& collision)
@@ -146,7 +195,7 @@ void Physics::Collide(const size_t indexA, const ShapeType shapeA, const size_t 
 	}
 }
 
-void Physics::Resolve(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
+void Physics::ResolveCollision(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
 {
 	const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
 	assert(sharedColliderA && "Can't get Collider's shared pointer because it's no longer valid.");
@@ -155,27 +204,75 @@ void Physics::Resolve(const size_t indexA, const size_t indexB, const std::share
 
 	if (sharedColliderA->IsDynamic() && !sharedColliderB->IsDynamic())
 	{
-		sharedColliderA->MoveEntity((-1.f) * collision->normal * collision->depth);
+		const std::shared_ptr<Rigidbody> sharedRBA = m_Rigidbodies[sharedColliderA->GetRigidbodyId()].lock();
+		sharedRBA->MoveEntity(collision->normal * collision->depth * (-1.f));
+
+		// if it's > 0 it means they're moving in the same direction
+		const float dot = glm::dot(-sharedRBA->GetLinearVelocity(), collision->normal);
+		if (dot <= 0.f)
+		{
+			const float j = CalculateImpulseMagnitude(sharedRBA->GetRestitution(), dot, sharedRBA->GetInverseMass());
+			sharedRBA->GetLinearVelocity() -= sharedRBA->GetInverseMass() * j * collision->normal;
+		}
+
 		collision->entity = sharedColliderB->GetEntity();
 		sharedColliderA->OnCollision(collision);
 	}
 	else if (sharedColliderB->IsDynamic() && !sharedColliderA->IsDynamic())
 	{
-		sharedColliderB->MoveEntity(collision->normal * collision->depth);
+		const std::shared_ptr<Rigidbody> sharedRBB = m_Rigidbodies[sharedColliderB->GetRigidbodyId()].lock();
+		sharedRBB->MoveEntity(collision->normal * collision->depth);
+
+		const float dot = glm::dot(sharedRBB->GetLinearVelocity(), collision->normal);
+		if (dot <= 0.f)
+		{
+			const float j = CalculateImpulseMagnitude(sharedRBB->GetRestitution(), dot, sharedRBB->GetInverseMass());
+			sharedRBB->GetLinearVelocity() += sharedRBB->GetInverseMass() * j * collision->normal;
+		}
+
 		collision->entity = sharedColliderA->GetEntity();
-		sharedColliderA->OnCollision(collision);
+		sharedColliderB->OnCollision(collision);
 	}
 	else
 	{
-		sharedColliderA->MoveEntity((-1.f) * collision->normal * collision->depth / 2.f);
+		const std::shared_ptr<Rigidbody> sharedRBA = m_Rigidbodies[sharedColliderA->GetRigidbodyId()].lock();
+		const std::shared_ptr<Rigidbody> sharedRBB = m_Rigidbodies[sharedColliderB->GetRigidbodyId()].lock();
+		std::shared_ptr<Collision> collisionB = std::make_shared<Collision>(*collision);
+		sharedRBA->MoveEntity(collision->normal * (collision->depth / 2.f) * (-1.f));
+		sharedRBB->MoveEntity(collisionB->normal * (collisionB->depth / 2.f));
+
+		const float dot = glm::dot((sharedRBB->GetLinearVelocity() - sharedRBA->GetLinearVelocity()), collision->normal);
+		if (dot <= 0.f)
+		{
+			const float j = CalculateImpulseMagnitude(glm::min(sharedRBA->GetRestitution(), sharedRBB->GetRestitution()), dot, sharedRBA->GetInverseMass() + sharedRBB->GetInverseMass());
+			sharedRBA->GetLinearVelocity() -= sharedRBA->GetInverseMass() * j * collision->normal;
+			sharedRBB->GetLinearVelocity() += sharedRBA->GetInverseMass() * j * collision->normal;
+		}
+
 		collision->entity = sharedColliderB->GetEntity();
 		sharedColliderA->OnCollision(collision);
 
-		std::shared_ptr<Collision> collision2 = std::make_shared<Collision>(*collision);
-		sharedColliderB->MoveEntity(collision2->normal * collision2->depth / 2.f);
-		collision2->entity = sharedColliderA->GetEntity();
-		sharedColliderB->OnCollision(collision2);
+		collisionB->entity = sharedColliderA->GetEntity();
+		sharedColliderB->OnCollision(collisionB);
 	}
+}
+
+float Physics::CalculateImpulseMagnitude(const float restitution, const float dotVelocityNormal, const float inverseMassSum)
+{
+	float j = -(1.f + restitution) * dotVelocityNormal;
+	return j /= inverseMassSum;
+}
+
+bool Physics::CheckAABBOverlap(const AABB& boxA, const AABB& boxB)
+{
+	bool result = true;
+	if (boxA.max.x <= boxB.min.x || boxB.max.x <= boxA.min.x ||
+		boxA.max.y <= boxB.min.y || boxB.max.y <= boxA.min.y)
+	{
+		result = false;
+	}
+
+	return result;
 }
 
 void Physics::CheckRectangleVsRectangle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
@@ -318,7 +415,7 @@ bool Physics::CheckSAT(const std::array<glm::vec2, 4>& verticesA, const std::arr
 
 	glm::vec2 axis = glm::vec2(0, 0);
 	glm::vec2 edge = glm::vec2(0, 0);
-	float axisDepth = 0.f;
+	//float axisDepth = 0.f;
 	float minA = 0.f;
 	float maxA = 0.f;
 	float minB = 0.f;
@@ -333,20 +430,18 @@ bool Physics::CheckSAT(const std::array<glm::vec2, 4>& verticesA, const std::arr
 		ProjectVertices(verticesA, axis, minA, maxA);
 		ProjectVertices(verticesB, axis, minB, maxB);
 
-		if (minA >= maxB || minB >= maxA)
+		if ((minA >= maxB) || (minB >= maxA))
 		{
 			collided = false;
 			break;
 		}
-		else
-		{
-			axisDepth = glm::min(maxB - minA, maxA - minB);
-			if (axisDepth < collision->depth)
-			{
-				collision->depth = axisDepth;
-				collision->normal = axis;
-			}
-		}
+		else GetDepthAndNormal(glm::min(maxB - minA, maxA - minB), axis, collision);
+			//axisDepth = glm::min(maxB - minA, maxA - minB);
+			//if (axisDepth < collision->depth)
+			//{
+			//	collision->depth = axisDepth;
+			//	collision->normal = axis;
+			//}
 	}
 
 	return collided;
@@ -359,7 +454,7 @@ bool Physics::CheckSAT(const glm::vec2& circleCenter, const float radius, const 
 
 	glm::vec2 axis = glm::vec2(0, 0);
 	glm::vec2 edge = glm::vec2(0, 0);
-	float axisDepth = 0.f;
+	//float axisDepth = 0.f;
 	float minA = 0.f;
 	float maxA = 0.f;
 	float minB = 0.f;
@@ -374,20 +469,18 @@ bool Physics::CheckSAT(const glm::vec2& circleCenter, const float radius, const 
 		ProjectVertices(vertices, axis, minA, maxA);
 		ProjectCircle(circleCenter, radius, axis, minB, maxB);
 
-		if (minA >= maxB || minB >= maxA)
+		if ((minA >= maxB) || (minB >= maxA))
 		{
 			collided = false;
 			break;
 		}
-		else
-		{
-			axisDepth = glm::min(maxB - minA, maxA - minB);
-			if (axisDepth < collision->depth)
-			{
-				collision->depth = axisDepth;
-				collision->normal = axis;
-			}
-		}
+		else GetDepthAndNormal(glm::min(maxB - minA, maxA - minB), axis, collision);
+			//axisDepth = glm::min(maxB - minA, maxA - minB);
+			//if (axisDepth < collision->depth)
+			//{
+			//	collision->depth = axisDepth;
+			//	collision->normal = axis;
+			//}
 	}
 
 	axis = glm::normalize(FindClosestPointOnRectangle(circleCenter, vertices) - circleCenter);
@@ -398,17 +491,24 @@ bool Physics::CheckSAT(const glm::vec2& circleCenter, const float radius, const 
 	{
 		collided = false;
 	}
-	else
-	{
-		axisDepth = glm::min(maxB - minA, maxA - minB);
-		if (axisDepth < collision->depth)
-		{
-			collision->depth = axisDepth;
-			collision->normal = axis;
-		}
-	}
+	else GetDepthAndNormal(glm::min(maxB - minA, maxA - minB), axis, collision);
+		//axisDepth = glm::min(maxB - minA, maxA - minB);
+		//if (axisDepth < collision->depth)
+		//{
+		//	collision->depth = axisDepth;
+		//	collision->normal = axis;
+		//}
 
 	return collided;
+}
+
+void Physics::GetDepthAndNormal(const float axisDepth, const glm::vec2& axis, const std::shared_ptr<Collision>& collision)
+{
+	if (axisDepth < collision->depth)
+	{
+		collision->depth = axisDepth;
+		collision->normal = axis;
+	}
 }
 
 bool Physics::CheckCircles(const glm::vec2& centerA, const float radiusA, const glm::vec2& centerB, const float radiusB, const std::shared_ptr<Collision>& collision)

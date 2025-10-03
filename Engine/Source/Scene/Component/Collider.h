@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <array>
+#include <limits>
 
 #include "Component.h"
 #include "Transform.h"
@@ -8,6 +9,7 @@
 #include "../../Utility/Utility.h"
 
 struct Collsion;
+class Rigidbody;
 
 ////////////////////
 
@@ -16,6 +18,18 @@ enum class ShapeType
 	Undefined,
 	Box,
 	Circle,
+};
+
+////////////////////
+
+struct AABB
+{
+	AABB(const glm::vec2& min, const glm::vec2& max)
+		: min(min), max(max)
+	{ }
+
+	glm::vec2 min;
+	glm::vec2 max;
 };
 
 ////////////////////
@@ -32,7 +46,7 @@ public:
 		sharedEntity->OnCollision(other);
 	}
 
-	bool IsDynamic() const { return m_Dynamic; }
+	bool IsDynamic() const { return m_IsDynamic; }
 	bool IsEnabled() const { return m_Enabled; }
 
 	void Disable() { m_Enabled = false; }
@@ -41,26 +55,29 @@ public:
 	ShapeType GetType() const { return m_Type; }
 	size_t GetId() const { return m_Id; }
 
-	glm::vec2 GetPosition() const { return m_TransformData->position; }
-	glm::vec2& GetPosition() { return m_TransformData->position; }
-
-	glm::vec2 GetRotation() const { return m_TransformData->rotation; }
-	glm::vec2& GetRotation() { return m_TransformData->rotation; }
-
-	void SetPosition(const glm::vec2& position) { m_TransformData->position = position; }
-	void SetRotation(const glm::vec2& rotation) { m_TransformData->rotation= rotation; }
-
-	void MoveEntity(const glm::vec2& amount)
+	size_t GetRigidbodyId() const
 	{
-		m_TransformData->position += amount;
+		assert(m_IsDynamic && "This collider is not dynamic, so doesn't have a rigidbody connected to it.");
+		return m_RigidbodyId;
 	}
 
+	glm::vec2 GetPosition() const { return m_TransformData->position; }
+	glm::vec2& GetPosition() { return m_TransformData->position; }
+	void SetPosition(const glm::vec2& position) { m_TransformData->position = position; }
+
+	void MoveCollider(const glm::vec2& amount)
+	{
+		// change the relative position
+	}
+
+	virtual AABB GetAABB() = 0;
+
 protected:
-	Collider(bool isStatic, bool enabled = true)
-		: m_Dynamic(isStatic)
+	Collider(bool enabled = true)
+		: m_Enabled(enabled), m_AABB(glm::vec2(0, 0), glm::vec2(0, 0))
 	{}
 
-	virtual ~Collider() {};
+	virtual ~Collider() {}
 
 	virtual void OnInit() override
 	{
@@ -70,13 +87,29 @@ protected:
 		// Entity must have a Transform to use a Collider
 		assert(sharedEntity->HasComponent<Transform>() && "Tranform Component is not present.");
 		m_TransformData = sharedEntity->GetComponent<Transform>()->GetTransformData();
+
+		if (!m_IsDynamic)
+		{
+			if (sharedEntity->HasComponent<Rigidbody>()) m_IsDynamic = true;
+			else m_AABB = GetAABB();
+		}
+	}
+
+	void SetDynamic(bool isDynamic, size_t rigidbodyId)
+	{
+		m_IsDynamic = isDynamic;
+		m_RigidbodyId = rigidbodyId;
+
+		if (!m_IsDynamic) m_AABB = GetAABB();
 	}
 
 	////////////////////
 
-	size_t m_Id;
+	size_t m_Id = 0;
+	// shouldn't be used if collider is static, meaning doesn't have a rigidbody
+	size_t m_RigidbodyId = 0;
 
-	bool m_Dynamic = false;
+	bool m_IsDynamic = false;
 
 	bool m_Enabled = true;
 
@@ -84,7 +117,10 @@ protected:
 
 	ShapeType m_Type = ShapeType::Undefined;
 
+	AABB m_AABB;
+
 private:
+	friend class Rigidbody;
 };
 
 ////////////////////
@@ -92,8 +128,8 @@ private:
 class BoxCollider : public Collider
 {
 public:
-	BoxCollider(const glm::vec2& size, bool isDynamic = false, bool enabled = true)
-		: Collider(isDynamic, enabled), m_Size(size)
+	BoxCollider(const glm::vec2& size, bool enabled = true)
+		: Collider(enabled), m_Size(size)
 	{
 		m_Type = ShapeType::Box;
 	}
@@ -109,6 +145,10 @@ public:
 	glm::vec2 GetSize() const { return m_Size; }
 	glm::vec2& GetSize() { return m_Size; }
 	void SetSize(const glm::vec2& size) { m_Size = size; }
+
+	glm::vec2 GetRotation() const { return m_TransformData->rotation; }
+	glm::vec2& GetRotation() { return m_TransformData->rotation; }
+	void SetRotation(const glm::vec2& rotation) { m_TransformData->rotation = rotation; }
 
 	std::array<glm::vec2, 4> GetVertices() const
 	{
@@ -127,6 +167,30 @@ public:
 		return vertices;
 	}
 
+	virtual AABB GetAABB() override
+	{
+		if (m_IsDynamic ||
+			(!m_IsDynamic && m_AABB.min == glm::vec2(0, 0) && m_AABB.max == glm::vec2(0, 0)))
+		{
+			float minX = std::numeric_limits<float>::max();
+			float maxX = std::numeric_limits<float>::min();
+			float minY = std::numeric_limits<float>::max();
+			float maxY = std::numeric_limits<float>::min();
+
+			for (const glm::vec2& vertex : GetVertices())
+			{
+				if (vertex.x < minX) minX = vertex.x;
+				if (vertex.x > maxX) maxX = vertex.x;
+				if (vertex.y < minY) minY = vertex.y;
+				if (vertex.y > maxY) maxY = vertex.y;
+			}
+
+			m_AABB = AABB(glm::vec2(minX, minY), glm::vec2(maxX, maxY));
+		}
+
+		return m_AABB;
+	}
+
 private:
 	glm::vec2 m_Size = glm::vec2(0.f, 0.f);
 };
@@ -136,8 +200,8 @@ private:
 class CircleCollider : public Collider
 {
 public:
-	CircleCollider(const float radius = 0.f, bool isDynamic = false, bool enabled = true)
-		: Collider(isDynamic, enabled), m_Radius(radius)
+	CircleCollider(const float radius = 0.f, bool enabled = true)
+		: Collider(enabled), m_Radius(radius)
 	{
 		m_Type = ShapeType::Circle;
 	}
@@ -153,6 +217,20 @@ public:
 	float GetRadius() const { return m_Radius; }
 	float& GetRadius() { return m_Radius; }
 	void SetRadius(const float radius) { m_Radius = radius; }
+
+	virtual AABB GetAABB() override
+	{
+		if (m_IsDynamic ||
+			(!m_IsDynamic && m_AABB.min == glm::vec2(0, 0) && m_AABB.max == glm::vec2(0, 0)))
+		{
+			const float minX = m_TransformData->position.x - m_Radius;
+			const float maxX = m_TransformData->position.x + m_Radius;
+			const float minY = m_TransformData->position.y - m_Radius;
+			const float maxY = m_TransformData->position.y + m_Radius;
+			m_AABB = AABB(glm::vec2(minX, minY), glm::vec2(maxX, maxY));
+		}
+		return m_AABB;
+	}
 
 private:
 	float m_Radius = 0.f;

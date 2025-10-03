@@ -1,9 +1,12 @@
 #include "Player.h"
 
 #include <Input/InputManager.h>
+#include <Scene/Component/Transform.h>
 #include <Scene/Component/Tag.h>
 #include <Scene/Component/Sprite.h>
 #include <Scene/Component/Collider.h>
+#include <Scene/Component/Rigidbody.h>
+
 #include <Scene/Scene.h>
 #include <Scene/Physics.h>
 #include <Utility/Utility.h>
@@ -16,43 +19,49 @@ void Player::OnInit()
 	AddComponent<Tag>(defaultTag.data());
 	AddComponent<Sprite>(spritePath);
 	
-	AddComponent<CircleCollider>(14.f, true);
-	//AddComponent<BoxCollider>(glm::vec2(25.f, 25.f), true);
+	AddComponent<CircleCollider>(14.f);
+	m_Rigidbody = AddComponent<Rigidbody>(1.f, linearDamping, 0.5f);
 
 	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
 	assert(sharedScene && "This Entity's reference to the Scene is null");
-	sharedScene->RegisterEditableDebugWindowField("Player's Max Speed", &m_MaxSpeed, 12.f, 0.f, 2);
+	sharedScene->RegisterEditableDebugWindowField("Player's Max Speed", &m_MaxSpeed, 25.f, 0.f, 2);
 	sharedScene->RegisterDebugWindowField("Player's Current Speed", &m_Speed, 2);
 }
 
 void Player::Update(float deltaTime)
 {
 	const glm::vec2 input = GetMovementInput();
-	if (input.y == 1)
-	{
-		m_Speed += acceleration * deltaTime;
-	}
-	else if (input.y == -1)
-	{
-		m_Speed += deceleration * deltaTime * (-1);
-	}
-	else if (input.y == 0)
-	{
-		m_Speed += linearDrag * deltaTime * (-1);
-	}
-	
 	if (input.x != 0)
 	{
 		m_Transform->rotation = Vector::Rotate(m_Transform->rotation, rotationRate * deltaTime * input.x);
 	}
 
-	m_Speed = glm::clamp(m_Speed, 0.f, m_MaxSpeed);
-	m_Transform->position += m_Transform->rotation * m_Speed;
+	if (input.y != 0)
+	{
+		if (input.y == 1)
+		{
+			m_Speed += acceleration;
+		}
+		else if (input.y == -1)
+		{
+			m_Speed += deceleration * (-1);
+		}
+
+		m_Speed = glm::clamp(m_Speed, 0.f, m_MaxSpeed);
+		//m_Rigidbody->GetLinearVelocity() += m_Transform->rotation * m_Speed;
+		m_Rigidbody->ApplyForce(Force(m_Transform->rotation * m_Speed, false));
+	}
+	else if (m_Speed > 0)
+	{
+		m_Speed -= linearDamping;
+		if (m_Speed < 0.f) m_Speed = 0.f;
+	}
 }
 
-//void Player::OnCollision(const std::shared_ptr<Collision>& other)
-//{
-//}
+void Player::OnCollision(const std::shared_ptr<Collision>& other)
+{
+	m_Speed = 0.f;
+}
 
 glm::vec2 Player::GetMovementInput() const
 {
@@ -76,7 +85,9 @@ void Player::DrawDebug(const RendererDebug& rendererDebug)
 	//const glm::vec2 origin = m_Transform->position + m_Transform->rotation * 20.f;
 	//const float length = 80.f;
 	//rendererDebug.DrawLine(origin, origin + m_Transform->rotation * length, Colour::green);
-	//if (m_Scene->Raycast(origin, m_Transform->rotation, length, hitResult))
+	//const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
+	//assert(sharedScene && "Scene's shared pointer is no longer accessible.");
+	//if (sharedScene->Raycast(origin, m_Transform->rotation, length, hitResult))
 	//{
 	//	rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);
 	//}

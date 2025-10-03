@@ -1,13 +1,14 @@
 #include "EnvironmentManager.h"
 
 #include <Scene/Component/Collider.h>
+#include <Scene/Component/Rigidbody.h>
 #include <Utility/Utility.h>
 
 ////////////////////
 
 EnvironmentManager::EnvironmentManager()
 {
-	m_Boundaries.resize(numberOfBoundaries);
+	m_Boundaries.resize(numberOfInitialBoundaries);
 	m_Obstacles.resize(numberOfInitialObstacles);
 }
 
@@ -33,20 +34,29 @@ void EnvironmentManager::OnInit()
 
 		m_Boundaries[i] = newEntity;
 	}
+
 	for (size_t i = 0; i < m_Obstacles.size(); i++)
 	{
+		bool positive = true;
 		newEntity = sharedScene->CreateEntity<Entity>();
 		newEntity->AddComponent<Transform>(glm::vec2(Random::RandomInRange<float>(minObstaclePosition, maxObstaclePosition),
 			Random::RandomInRange<float>(minObstaclePosition, maxObstaclePosition)));
+
 		if (i % 2 == 0)
 		{
+			positive = false;
 			newEntity->AddComponent<BoxCollider>(glm::vec2(Random::RandomInRange<float>(minObstacleSize, maxObstacleSize),
-				Random::RandomInRange<float>(minObstacleSize, maxObstacleSize)), true);
+												Random::RandomInRange<float>(minObstacleSize, maxObstacleSize)), true);
 		}
 		else
 		{
 			newEntity->AddComponent<CircleCollider>(Random::RandomInRange<float>(minObstacleSize, maxObstacleSize), true);
 		}
+
+		std::shared_ptr<Rigidbody> newRB = newEntity->AddComponent<Rigidbody>(obstacleMass, obstacleLinearDamping, obstacleRestitution);
+		newRB->SetLinearVelocity(glm::vec2(Random::RandomInRange<float>(minObstacleVelocity, maxObstacleVelocity),
+											Random::RandomInRange<float>(minObstacleVelocity, maxObstacleVelocity)));
+		if (!positive) newRB->GetLinearVelocity() *= -1;
 
 		m_Obstacles[i] = newEntity;
 	}

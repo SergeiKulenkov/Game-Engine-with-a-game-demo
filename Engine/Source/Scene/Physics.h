@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 
 #include "Component/Collider.h"
+#include "Component/Rigidbody.h"
 
 class Scene;
 class Entity;
@@ -43,8 +44,11 @@ class Physics
 public:
 	void Update(float deltaTime);
 
-	size_t AddCollider(const std::shared_ptr<Collider>& collider);
-	void RemoveCollider(size_t id) { m_Colliders.erase(m_Colliders.begin() + id); }
+	size_t AddCollider(const std::weak_ptr<Collider>& collider);
+	void RemoveCollider(const size_t id) { m_Colliders.erase(m_Colliders.begin() + id); }
+
+	size_t AddRigidbody(const std::weak_ptr<Rigidbody>& rigidbody);
+	void RemoveRigidbody(const size_t id) { m_Rigidbodies.erase(m_Rigidbodies.begin() + id); }
 
 	bool Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult);
 	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, const std::shared_ptr<RaycastHit>& hitResult) { return Raycast(Ray(origin, direction, length), hitResult); }
@@ -55,7 +59,10 @@ private:
 	~Physics() {}
 
 	void Collide(const size_t indexA, const ShapeType shapeA, const size_t indexB, const ShapeType shapeB, const std::shared_ptr<Collision>& collision);
-	void Resolve(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
+	void ResolveCollision(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
+	float CalculateImpulseMagnitude(const float restitution, const float dotVelocityNormal, const float inverseMassSum);
+
+	bool CheckAABBOverlap(const AABB& boxA, const AABB& boxB);
 
 	void CheckRectangleVsRectangle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
 
@@ -70,12 +77,17 @@ private:
 	// uses Separating Axis Theorem
 	bool CheckSAT(const std::array<glm::vec2, 4>& verticesA, const std::array<glm::vec2, 4>& verticesB, const std::shared_ptr<Collision>& collision);
 	bool CheckSAT(const glm::vec2& circleCenter, const float radius, const std::array<glm::vec2, 4>& vertices, const std::shared_ptr<Collision>& collision);
+	void GetDepthAndNormal(const float axisDepth, const glm::vec2& axis, const std::shared_ptr<Collision>& collision);
 
 	bool CheckCircles(const glm::vec2& centerA, const float radiusA, const glm::vec2& centerB, const float radiusB, const std::shared_ptr<Collision>& collision);
+
+	bool RaycastAgainstBox(const std::shared_ptr<BoxCollider>& box, const glm::vec2& rayOrigin, const glm::vec2& rayEnd, const bool infiniteRay, RaycastHit& hitResult);
+	bool RaycastAgainstCircle(const std::shared_ptr<CircleCollider> circle, const glm::vec2& rayOrigin, const glm::vec2& rayEnd, const bool infiniteRay, RaycastHit& hitResult);
 
 	////////////////////
 
 	std::vector<std::weak_ptr<Collider>> m_Colliders;
+	std::vector<std::weak_ptr<Rigidbody>> m_Rigidbodies;
 
 	friend class Scene;
 };

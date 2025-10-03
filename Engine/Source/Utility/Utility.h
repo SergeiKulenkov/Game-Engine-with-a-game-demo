@@ -76,4 +76,12 @@ namespace Vector
 		const float length = glm::length(vector);
 		return PairCosSin(vector.x / length, vector.y / length);
 	}
+
+	inline bool IsFirstPointCloser(const glm::vec2& origin, const glm::vec2& first, const glm::vec2& second)
+	{
+		const glm::vec2 diff1 = glm::abs(origin - first);
+		const glm::vec2 diff2 = glm::abs(origin - second);
+		// avoiding square root for calculating distance
+		return glm::dot(diff1, diff1) < glm::dot(diff2, diff2);
+	}
 }

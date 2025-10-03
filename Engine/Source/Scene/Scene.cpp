@@ -81,6 +81,11 @@ void Scene::DestroyEntity(const size_t id)
 		m_Physics.RemoveCollider(m_Entities[id]->GetComponent<CircleCollider>()->GetId());
 	}
 
+	if (m_Entities[id]->HasComponent<Rigidbody>())
+	{
+		m_Physics.RemoveRigidbody(m_Entities[id]->GetComponent<Rigidbody>()->GetId());
+	}
+
 	m_Entities.erase(id);
 }
 
