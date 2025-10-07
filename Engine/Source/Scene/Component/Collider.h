@@ -11,6 +11,8 @@
 struct Collsion;
 class Rigidbody;
 
+#define ASSERT_COLLIDER_DYNAMIC(isDynamic) assert(isDynamic && "This collider is not dynamic, so doesn't have a rigidbody connected to it.");
+
 ////////////////////
 
 enum class ShapeType
@@ -42,7 +44,7 @@ public:
 	virtual void OnCollision(const std::shared_ptr<Collision>& other)
 	{
 		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
+		ASSERT_ENTITY_SHARED_PTR(sharedEntity);
 		sharedEntity->OnCollision(other);
 	}
 
@@ -57,7 +59,7 @@ public:
 
 	size_t GetRigidbodyId() const
 	{
-		assert(m_IsDynamic && "This collider is not dynamic, so doesn't have a rigidbody connected to it.");
+		ASSERT_COLLIDER_DYNAMIC(m_IsDynamic);
 		return m_RigidbodyId;
 	}
 
@@ -82,10 +84,10 @@ protected:
 	virtual void OnInit() override
 	{
 		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
+		ASSERT_ENTITY_SHARED_PTR(sharedEntity);
 
 		// Entity must have a Transform to use a Collider
-		assert(sharedEntity->HasComponent<Transform>() && "Tranform Component is not present.");
+		ASSERRT_HAS_TRANSFORM(sharedEntity->HasComponent<Transform>());
 		m_TransformData = sharedEntity->GetComponent<Transform>()->GetTransformData();
 
 		if (!m_IsDynamic)
@@ -106,8 +108,6 @@ protected:
 	////////////////////
 
 	size_t m_Id = 0;
-	// shouldn't be used if collider is static, meaning doesn't have a rigidbody
-	size_t m_RigidbodyId = 0;
 
 	bool m_IsDynamic = false;
 
@@ -120,6 +120,8 @@ protected:
 	AABB m_AABB;
 
 private:
+	size_t m_RigidbodyId = 0;
+
 	friend class Rigidbody;
 };
 
@@ -138,7 +140,7 @@ public:
 	{
 		Collider::OnInit();
 		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
+		ASSERT_ENTITY_SHARED_PTR(sharedEntity);
 		m_Id = sharedEntity->RegisterCollider(typeid(BoxCollider).hash_code());
 	}
 
@@ -210,7 +212,7 @@ public:
 	{
 		Collider::OnInit();
 		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
+		ASSERT_ENTITY_SHARED_PTR(sharedEntity);
 		m_Id = sharedEntity->RegisterCollider(typeid(CircleCollider).hash_code());
 	}
 

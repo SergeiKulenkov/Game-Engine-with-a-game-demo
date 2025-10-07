@@ -23,7 +23,7 @@ void Player::OnInit()
 	m_Rigidbody = AddComponent<Rigidbody>(1.f, linearDamping, 0.5f);
 
 	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-	assert(sharedScene && "This Entity's reference to the Scene is null");
+	ASSERT_ENTITY_SHARED_PTR(sharedScene);
 	sharedScene->RegisterEditableDebugWindowField("Player's Max Speed", &m_MaxSpeed, 25.f, 0.f, 2);
 	sharedScene->RegisterDebugWindowField("Player's Current Speed", &m_Speed, 2);
 }
@@ -48,7 +48,6 @@ void Player::Update(float deltaTime)
 		}
 
 		m_Speed = glm::clamp(m_Speed, 0.f, m_MaxSpeed);
-		//m_Rigidbody->GetLinearVelocity() += m_Transform->rotation * m_Speed;
 		m_Rigidbody->ApplyForce(Force(m_Transform->rotation * m_Speed, false));
 	}
 	else if (m_Speed > 0)
@@ -86,7 +85,7 @@ void Player::DrawDebug(const RendererDebug& rendererDebug)
 	//const float length = 80.f;
 	//rendererDebug.DrawLine(origin, origin + m_Transform->rotation * length, Colour::green);
 	//const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-	//assert(sharedScene && "Scene's shared pointer is no longer accessible.");
+	//ASSERT_ENTITY_SHARED_PTR(sharedScene);
 	//if (sharedScene->Raycast(origin, m_Transform->rotation, length, hitResult))
 	//{
 	//	rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);

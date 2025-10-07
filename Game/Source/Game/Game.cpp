@@ -34,7 +34,11 @@ Game& Game::Get()
 
 void Game::Start()
 {
+#ifdef DEBUG
 	m_Scene->Start(true);
+#elif
+	m_Scene->Start(false);
+#endif
 	m_Scene->CreateEntity<Player>();
 	m_Scene->CreateEntity<EnvironmentManager>();
 }

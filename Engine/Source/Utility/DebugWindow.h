@@ -66,7 +66,7 @@ private:
 	static constexpr std::string_view windowName = "Debug Window";
 	static constexpr uint8_t defaultNumberOfFields = 5;
 
-	static constexpr float fieldWidth = 40.f;
+	static constexpr float fieldWidth = 45.f;
 	static constexpr float speedOfDragFloat = 0.2f;
 
 	std::vector<DebugField> m_Fields;

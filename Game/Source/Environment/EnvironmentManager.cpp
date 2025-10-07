@@ -16,7 +16,7 @@ void EnvironmentManager::OnInit()
 {
 	std::shared_ptr<Entity> newEntity;
 	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-	assert(sharedScene && "This Entity's reference to the Scene is null");
+	ASSERT_ENTITY_SHARED_PTR(sharedScene);
 	const glm::vec2 screenSize = sharedScene->GetScreenSize();
 
 	for (size_t i = 0; i < m_Boundaries.size(); i++)

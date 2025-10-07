@@ -72,18 +72,18 @@ void Scene::Render()
 
 void Scene::DestroyEntity(const size_t id)
 {
-	if (m_Entities[id]->HasComponent<BoxCollider>())
+	if (m_Entities.at(id)->HasComponent<BoxCollider>())
 	{
-		m_Physics.RemoveCollider(m_Entities[id]->GetComponent<BoxCollider>()->GetId());
+		m_Physics.RemoveCollider(m_Entities.at(id)->GetComponent<BoxCollider>()->GetId());
 	}
-	else if (m_Entities[id]->HasComponent<CircleCollider>())
+	else if (m_Entities.at(id)->HasComponent<CircleCollider>())
 	{
-		m_Physics.RemoveCollider(m_Entities[id]->GetComponent<CircleCollider>()->GetId());
+		m_Physics.RemoveCollider(m_Entities.at(id)->GetComponent<CircleCollider>()->GetId());
 	}
 
-	if (m_Entities[id]->HasComponent<Rigidbody>())
+	if (m_Entities.at(id)->HasComponent<Rigidbody>())
 	{
-		m_Physics.RemoveRigidbody(m_Entities[id]->GetComponent<Rigidbody>()->GetId());
+		m_Physics.RemoveRigidbody(m_Entities.at(id)->GetComponent<Rigidbody>()->GetId());
 	}
 
 	m_Entities.erase(id);

@@ -102,10 +102,10 @@ protected:
 	virtual void OnInit() override
 	{
 		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
+		ASSERT_ENTITY_SHARED_PTR(sharedEntity);
 		m_Id = sharedEntity->RegisterRigidbody();
 
-		assert(sharedEntity->HasComponent<Transform>() && "Tranform Component is not present.");
+		ASSERRT_HAS_TRANSFORM(sharedEntity->HasComponent<Transform>());
 		m_TransformData = sharedEntity->GetComponent<Transform>()->GetTransformData();
 
 		if (sharedEntity->HasComponent<BoxCollider>())
@@ -121,7 +121,7 @@ protected:
 	virtual void OnRemove() override
 	{
 		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-		assert(sharedEntity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
+		ASSERT_ENTITY_SHARED_PTR(sharedEntity);
 
 		// set collider to dynamic
 		if (sharedEntity->HasComponent<BoxCollider>())

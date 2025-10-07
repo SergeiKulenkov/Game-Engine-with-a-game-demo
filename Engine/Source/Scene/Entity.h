@@ -5,6 +5,11 @@
 
 #include "Component/Component.h"
 
+#define ASSERT_SCENE_SHARED_PTR(scene) assert(scene && "This Entity's reference to the Scene is null");
+#define ASSERT_COMPONENT_PRESENT(present) assert(present && "This Component is already present.");
+#define ASSERT_COMPONENT_NOT_PRESENT(notPresent) assert(notPresent && "This Component is not present.");
+#define ASSERT_DERIVED_FROM_COMPONENT(isDerived) static_assert(isDerived, "T must be of type Component.");
+
 ////////////////////
 
 class Scene;
@@ -31,24 +36,23 @@ public:
 	template<typename T, typename... Args>
 	std::shared_ptr<T> AddComponent(Args&&... args)
 	{
-		static_assert(std::is_base_of_v<Component, T>, "T must be of type Component.");
-		assert(!HasComponent<T>() && "This Component is already present.");
+		ASSERT_DERIVED_FROM_COMPONENT((std::is_base_of_v<Component, T>));
+		ASSERT_COMPONENT_PRESENT(!HasComponent<T>());
 
 		const size_t id = typeid(T).hash_code();
 		m_Components.emplace(id, std::make_shared<T>(std::forward<Args>(args)...));
-		m_Components[id]->m_Entity = shared_from_this();
-		m_Components[id]->OnInit();
+		m_Components.at(id)->m_Entity = shared_from_this();
+		m_Components.at(id)->OnInit();
 
-		return std::dynamic_pointer_cast<T>(m_Components[id]);
+		return std::dynamic_pointer_cast<T>(m_Components.at(id));
 	}
 
 	template<typename T>
 	std::shared_ptr<T> GetComponent()
 	{
-		static_assert(std::is_base_of_v<Component, T>, "T must be of type Component");
-
+		ASSERT_DERIVED_FROM_COMPONENT((std::is_base_of_v<Component, T>));
 		const auto iterator = m_Components.find(typeid(T).hash_code());
-		assert((iterator != m_Components.end()) && "This Component is not present.");
+		ASSERT_COMPONENT_NOT_PRESENT((iterator != m_Components.end()));
 
 		return std::dynamic_pointer_cast<T>(iterator->second);
 	}
@@ -56,16 +60,16 @@ public:
 	template<typename T>
 	bool HasComponent()
 	{
-		static_assert(std::is_base_of_v<Component, T>, "T must be of type Component");
+		ASSERT_DERIVED_FROM_COMPONENT((std::is_base_of_v<Component, T>));
 		return m_Components.find(typeid(T).hash_code()) != m_Components.end();
 	}
 
 	template<typename T>
 	void RemoveComponent()
 	{
-		assert(HasComponent<T>() && "This Component is not present.");
+		ASSERT_COMPONENT_NOT_PRESENT(HasComponent<T>());
 		const size_t id = typeid(T).hash_code();
-		m_Components[id]->OnRemove();
+		m_Components.at(id)->OnRemove();
 		m_Components.erase(id);
 	}
 

@@ -72,9 +72,9 @@ public:
 
 		const size_t id = m_Entities.size();
 		m_Entities.emplace(id, std::make_shared<T>());
-		m_Entities[id]->Init(id, shared_from_this());
+		m_Entities.at(id)->Init(id, shared_from_this());
 
-		return m_Entities[id];
+		return m_Entities.at(id);
 	}
 
 	// an Entity should be deleted by using this method
