@@ -17,11 +17,65 @@ void Physics::Update(float deltaTime)
 		sharedRigidbody->Update(deltaTime);
 	}
 
+	QuadTreeCollisions();
+	//SimpleCollisions();
+}
+
+void Physics::QuadTreeCollisions()
+{
+	// build the tree
+	for (const std::weak_ptr<Collider>& collider : m_Colliders)
+	{
+		const std::shared_ptr<Collider> sharedCollider = collider.lock();
+		ASSERT_COLLIDER_SHARED_PTR(sharedCollider);
+
+		if (!sharedCollider->IsEnabled()) continue;
+
+		const glm::vec2 size = glm::vec2(sharedCollider->GetAABB().max.x - sharedCollider->GetAABB().min.x, sharedCollider->GetAABB().max.y - sharedCollider->GetAABB().min.y);
+		m_QuadTree.insert(sharedCollider->GetId(), Area(sharedCollider->GetAABB().min, size));
+	}
+
 	// check collisions
 	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
 	{
 		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
 		ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
+
+		if (!sharedColliderA->IsEnabled()) continue;
+
+		const glm::vec2 size = glm::vec2(sharedColliderA->GetAABB().max.x - sharedColliderA->GetAABB().min.x, sharedColliderA->GetAABB().max.y - sharedColliderA->GetAABB().min.y);
+		for (const auto& iterator : m_QuadTree.search(Area(sharedColliderA->GetAABB().min, size)))
+		{
+			// exclude self
+			if (*iterator != sharedColliderA->GetId())
+			{
+				const std::shared_ptr<Collider> sharedColliderB = m_Colliders[*iterator].lock();
+				ASSERT_COLLIDER_SHARED_PTR(sharedColliderB);
+
+				// skip if second is disabled or both are static
+				if (!sharedColliderB->IsEnabled() ||
+					(!sharedColliderA->IsDynamic() && !sharedColliderB->IsDynamic()))
+				{
+					continue;
+				}
+
+				std::shared_ptr<Collision> collision = std::make_shared<Collision>();
+				Collide(indexA, sharedColliderA->GetType(), *iterator, sharedColliderB->GetType(), collision);
+				if (collision->detected) ResolveCollision(indexA, *iterator, collision);
+			}
+		}
+	}
+
+	m_QuadTree.clear();
+}
+
+void Physics::SimpleCollisions()
+{
+	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
+	{
+		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
+		ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
+
 		if (!sharedColliderA->IsEnabled()) continue;
 
 		for (size_t indexB = indexA + 1; indexB < m_Colliders.size(); indexB++)
@@ -29,6 +83,7 @@ void Physics::Update(float deltaTime)
 			const std::shared_ptr<Collider> sharedColliderB = m_Colliders[indexB].lock();
 			ASSERT_COLLIDER_SHARED_PTR(sharedColliderB);
 
+			// skip if second is disabled or both are static
 			if (!sharedColliderB->IsEnabled() ||
 				(!sharedColliderA->IsDynamic() && !sharedColliderB->IsDynamic()))
 			{
@@ -68,6 +123,7 @@ bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResu
 	const bool infiniteRay = ((ray.length == std::numeric_limits<float>::infinity()) || (ray.length == std::numeric_limits<float>::max()));
 	const glm::vec2 rayEnd = infiniteRay ? (ray.origin + ray.direction) : (ray.origin + ray.direction * ray.length);
 
+	// TODO: add optimization to not check every collider
 	for (size_t i = 0; i < m_Colliders.size(); i++)
 	{
 		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[i].lock();

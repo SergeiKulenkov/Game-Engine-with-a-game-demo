@@ -7,6 +7,7 @@
 
 #include "Component/Collider.h"
 #include "Component/Rigidbody.h"
+#include "../Utility/Quadtree.h"
 
 class Scene;
 class Entity;
@@ -26,14 +27,14 @@ struct Collision
 
 struct Ray
 {
-	glm::vec2 origin = glm::vec2(0, 0);
-	glm::vec2 direction = glm::vec2(1, 0);
+	glm::vec2 origin = glm::vec2(0.f, 0.f);
+	glm::vec2 direction = glm::vec2(1.f, 0.f);
 	float length = 0.f;
 };
 
 struct RaycastHit
 {
-	glm::vec2 contactPoint = glm::vec2(0, 0);
+	glm::vec2 contactPoint = glm::vec2(0.f, 0.f);
 	std::weak_ptr<Entity> entity;
 };
 
@@ -57,6 +58,11 @@ private:
 	Physics() {}
 
 	~Physics() {}
+
+	// using a static quad tree (it's rebuilt every frame)
+	void QuadTreeCollisions();
+	// check every collider against every other collider, O(n^2)
+	void SimpleCollisions();
 
 	void Collide(const size_t indexA, const ShapeType shapeA, const size_t indexB, const ShapeType shapeB, const std::shared_ptr<Collision>& collision);
 	void ResolveCollision(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
@@ -88,6 +94,8 @@ private:
 
 	std::vector<std::weak_ptr<Collider>> m_Colliders;
 	std::vector<std::weak_ptr<Rigidbody>> m_Rigidbodies;
+	
+	QuadTree<size_t> m_QuadTree = QuadTree<size_t>(glm::vec2(0.f, 0.f), glm::vec2(1920.f, 1080.f));
 
 	friend class Scene;
 };

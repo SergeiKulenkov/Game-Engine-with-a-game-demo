@@ -46,11 +46,11 @@ void EnvironmentManager::OnInit()
 		{
 			positive = false;
 			newEntity->AddComponent<BoxCollider>(glm::vec2(Random::RandomInRange<float>(minObstacleSize, maxObstacleSize),
-												Random::RandomInRange<float>(minObstacleSize, maxObstacleSize)), true);
+												Random::RandomInRange<float>(minObstacleSize, maxObstacleSize)));
 		}
 		else
 		{
-			newEntity->AddComponent<CircleCollider>(Random::RandomInRange<float>(minObstacleSize, maxObstacleSize), true);
+			newEntity->AddComponent<CircleCollider>(Random::RandomInRange<float>(minObstacleSize, maxObstacleSize));
 		}
 
 		std::shared_ptr<Rigidbody> newRB = newEntity->AddComponent<Rigidbody>(obstacleMass, obstacleLinearDamping, obstacleRestitution);
