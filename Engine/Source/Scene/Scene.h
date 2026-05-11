@@ -6,6 +6,7 @@
 #include "Physics.h"
 #include "../Utility/DebugWindow.h"
 #include "../Utility/Timer.h"
+#include "../Input/KeyCodes.h"
 
 class Collider;
 class Rigidbody;
@@ -95,13 +96,15 @@ public:
 	void RegisterDebugWindowField(const std::string& name, float* value, const uint8_t numberOfFractionalDigits = 1);
 
 private:
+	static constexpr KeyCode debugKey = KeyCode::GraveAccent;
+
 	ImDrawList* m_DrawList = nullptr;
 
 	RendererDebug m_RendererDebug;
 
 	Physics m_Physics;
 
-	std::unique_ptr<DebugWindow> m_DebugWindow;
+	std::unique_ptr<DebugWindow> m_DebugWindow = nullptr;
 
 	Timer m_Timer;
 
@@ -109,7 +112,7 @@ private:
 
 	std::unordered_map<size_t, std::shared_ptr<Entity>> m_Entities;
 
-	bool m_IsTabPressed = false;
+	bool m_IsDebugPressed = false;
 
 	float m_FrameTime = 0.f;
 };

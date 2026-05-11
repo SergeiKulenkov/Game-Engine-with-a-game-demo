@@ -39,7 +39,7 @@ private:
 	static constexpr float deceleration = 2.15f;
 	static constexpr float linearDamping = 0.25f;
 	static constexpr float defaultMaxSpeed = 150.5f;
-	static constexpr float rotationRate = 3.2f;
+	static constexpr float rotationRate = 3.5f;
 
 	////////////////////
 

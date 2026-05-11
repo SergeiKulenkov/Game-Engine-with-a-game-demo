@@ -23,8 +23,8 @@ void Player::OnInit()
 	m_Rigidbody = AddComponent<Rigidbody>(1.f, linearDamping, 0.5f);
 
 	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-	ASSERT_ENTITY_SHARED_PTR(sharedScene);
-	sharedScene->RegisterEditableDebugWindowField("Player's Max Speed", &m_MaxSpeed, 25.f, 0.f, 2);
+	ASSERT_SCENE_SHARED_PTR(sharedScene);
+	sharedScene->RegisterEditableDebugWindowField("Player's Max Speed", &m_MaxSpeed, 200.f, 0.f, 2);
 	sharedScene->RegisterDebugWindowField("Player's Current Speed", &m_Speed, 2);
 }
 
@@ -59,7 +59,7 @@ void Player::Update(float deltaTime)
 
 void Player::OnCollision(const std::shared_ptr<Collision>& other)
 {
-	m_Speed = 0.f;
+	//m_Speed = 0.f;
 }
 
 glm::vec2 Player::GetMovementInput() const
@@ -85,7 +85,7 @@ void Player::DrawDebug(const RendererDebug& rendererDebug)
 	//const float length = 80.f;
 	//rendererDebug.DrawLine(origin, origin + m_Transform->rotation * length, Colour::green);
 	//const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-	//ASSERT_ENTITY_SHARED_PTR(sharedScene);
+	//ASSERT_SCENE_SHARED_PTR(sharedScene);
 	//if (sharedScene->Raycast(origin, m_Transform->rotation, length, hitResult))
 	//{
 	//	rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);

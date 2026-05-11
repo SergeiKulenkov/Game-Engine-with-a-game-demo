@@ -178,6 +178,7 @@ private:
 
 ////////////////////
 
+// only store indexes from another container here because the tree is used for searching
 template<Integral IndexType>
 class QuadTree
 {

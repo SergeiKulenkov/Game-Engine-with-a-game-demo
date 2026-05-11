@@ -82,6 +82,7 @@ protected:
 	// called after setting the Scene pointer
 	// can be used to access Scene methods for the first time
 	// and to call AddComponent() because it requires an initialized shared_ptr to this Entity
+	// similar to Start in Unity or BeginPlay in UE
 	virtual void OnInit() {}
 
 	size_t m_Id = 0;

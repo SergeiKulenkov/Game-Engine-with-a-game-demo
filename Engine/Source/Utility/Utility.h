@@ -84,4 +84,11 @@ namespace Vector
 		// avoiding square root for calculating distance
 		return glm::dot(diff1, diff1) < glm::dot(diff2, diff2);
 	}
+
+	// check if the 2nd position is closer to the 1st than the distance, avoiding the square root for distance
+	inline bool CheckDistance(const glm::vec2& positionA, const glm::vec2& positionB, const float distance)
+	{
+		const glm::vec2 positionDiff = positionA - positionB;
+		return glm::dot(positionDiff, positionDiff) < (distance * distance);
+	}
 }

@@ -91,8 +91,7 @@ public:
 
 	void RotateEntity(const float amount)
 	{
-		m_TransformData->rotation += amount;
-		// rotate transform
+		m_TransformData->rotation = Vector::Rotate(m_TransformData->rotation, amount);
 	}
 
 	void ApplyForce(const Force& amount) { m_Force = amount; }

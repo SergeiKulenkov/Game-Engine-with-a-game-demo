@@ -17,13 +17,14 @@ void Physics::Update(float deltaTime)
 		sharedRigidbody->Update(deltaTime);
 	}
 
-	QuadTreeCollisions();
-	//SimpleCollisions();
+	QuadTreeCollisionDetection();
+	//SimpleCollisionDetections();
 }
 
-void Physics::QuadTreeCollisions()
+void Physics::QuadTreeCollisionDetection()
 {
-	// build the tree
+	// build the tree (it should be a dynamic tree, but rebuilding is still faster than checking every collider against every other)
+	// actually for 205 entities this is around 4 times faster, 18ms VS 4ms
 	for (const std::weak_ptr<Collider>& collider : m_Colliders)
 	{
 		const std::shared_ptr<Collider> sharedCollider = collider.lock();
@@ -69,7 +70,7 @@ void Physics::QuadTreeCollisions()
 	m_QuadTree.clear();
 }
 
-void Physics::SimpleCollisions()
+void Physics::SimpleCollisionDetections()
 {
 	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
 	{
@@ -106,10 +107,22 @@ size_t Physics::AddCollider(const std::weak_ptr<Collider>& collider)
 	return m_Colliders.size() - 1;
 }
 
+void Physics::RemoveCollider(const size_t id)
+{
+	m_Colliders[id] = m_Colliders[m_Colliders.size() - 1];
+	m_Colliders.pop_back();
+}
+
 size_t Physics::AddRigidbody(const std::weak_ptr<Rigidbody>& rigidbody)
 {
 	m_Rigidbodies.push_back(rigidbody);
 	return m_Rigidbodies.size() - 1;;
+}
+
+void Physics::RemoveRigidbody(const size_t id)
+{
+	m_Rigidbodies[id] = m_Rigidbodies[m_Rigidbodies.size() - 1];
+	m_Rigidbodies.pop_back();
 }
 
 bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult)
@@ -292,11 +305,19 @@ void Physics::ResolveCollision(const size_t indexA, const size_t indexB, const s
 	}
 	else
 	{
+		std::shared_ptr<Collision> collisionB = std::make_shared<Collision>(*collision);
+		collision->entity = sharedColliderB->GetEntity();
+		sharedColliderA->OnCollision(collision);
+
+		// check if not destroyed
+		collisionB->entity = sharedColliderA->GetEntity();
+		sharedColliderB->OnCollision(collisionB);
+
 		const std::shared_ptr<Rigidbody> sharedRBA = m_Rigidbodies[sharedColliderA->GetRigidbodyId()].lock();
 		ASSERT_RIGIDBODY_SHARED_PTR(sharedRBA);
 		const std::shared_ptr<Rigidbody> sharedRBB = m_Rigidbodies[sharedColliderB->GetRigidbodyId()].lock();
 		ASSERT_RIGIDBODY_SHARED_PTR(sharedRBB);
-		std::shared_ptr<Collision> collisionB = std::make_shared<Collision>(*collision);
+
 		sharedRBA->MoveEntity(collision->normal * (collision->depth / 2.f) * (-1.f));
 		sharedRBB->MoveEntity(collisionB->normal * (collisionB->depth / 2.f));
 
@@ -307,12 +328,6 @@ void Physics::ResolveCollision(const size_t indexA, const size_t indexB, const s
 			sharedRBA->GetLinearVelocity() -= sharedRBA->GetInverseMass() * j * collision->normal;
 			sharedRBB->GetLinearVelocity() += sharedRBA->GetInverseMass() * j * collision->normal;
 		}
-
-		collision->entity = sharedColliderB->GetEntity();
-		sharedColliderA->OnCollision(collision);
-
-		collisionB->entity = sharedColliderA->GetEntity();
-		sharedColliderB->OnCollision(collisionB);
 	}
 }
 

@@ -46,10 +46,10 @@ public:
 	void Update(float deltaTime);
 
 	size_t AddCollider(const std::weak_ptr<Collider>& collider);
-	void RemoveCollider(const size_t id) { m_Colliders.erase(m_Colliders.begin() + id); }
+	void RemoveCollider(const size_t id); 
 
 	size_t AddRigidbody(const std::weak_ptr<Rigidbody>& rigidbody);
-	void RemoveRigidbody(const size_t id) { m_Rigidbodies.erase(m_Rigidbodies.begin() + id); }
+	void RemoveRigidbody(const size_t id);
 
 	bool Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult);
 	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, const std::shared_ptr<RaycastHit>& hitResult) { return Raycast(Ray(origin, direction, length), hitResult); }
@@ -60,9 +60,9 @@ private:
 	~Physics() {}
 
 	// using a static quad tree (it's rebuilt every frame)
-	void QuadTreeCollisions();
+	void QuadTreeCollisionDetection();
 	// check every collider against every other collider, O(n^2)
-	void SimpleCollisions();
+	void SimpleCollisionDetections();
 
 	void Collide(const size_t indexA, const ShapeType shapeA, const size_t indexB, const ShapeType shapeB, const std::shared_ptr<Collision>& collision);
 	void ResolveCollision(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);

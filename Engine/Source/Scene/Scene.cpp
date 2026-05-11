@@ -37,16 +37,16 @@ void Scene::Update(float deltaTime)
 
 	m_Physics.Update(deltaTime);
 
-	if (m_DebugWindow)
+	if (m_DebugWindow != nullptr)
 	{
-		if (!m_IsTabPressed && InputManager::IsKeyDown(KeyCode::Tab))
+		if (!m_IsDebugPressed && InputManager::IsKeyDown(debugKey))
 		{
-			m_IsTabPressed = true;
+			m_IsDebugPressed = true;
 			m_DebugWindow->ChangeStatus();
 		}
-		else if (InputManager::IsKeyUp(KeyCode::Tab))
+		else if (InputManager::IsKeyUp(debugKey))
 		{
-			m_IsTabPressed = false;
+			m_IsDebugPressed = false;
 		}
 	}
 }
@@ -67,7 +67,7 @@ void Scene::Render()
 	}
 
 	m_FrameTime = m_Timer.ElapsedMilliseconds();
-	if (m_DebugWindow) m_DebugWindow->Render();
+	if (m_DebugWindow != nullptr) m_DebugWindow->Render();
 }
 
 void Scene::DestroyEntity(const size_t id)
@@ -104,10 +104,10 @@ glm::vec2 Scene::GetScreenSize() const
 
 void Scene::RegisterEditableDebugWindowField(const std::string& name, float* value, float max, float min, const uint8_t numberOfFractionalDigits)
 {
-	if (m_DebugWindow) m_DebugWindow->RegisterEditableField(name, value, max, min, numberOfFractionalDigits);
+	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterEditableField(name, value, max, min, numberOfFractionalDigits);
 }
 
 void Scene::RegisterDebugWindowField(const std::string& name, float* value, const uint8_t numberOfFractionalDigits)
 {
-	if (m_DebugWindow) m_DebugWindow->RegisterField(name, value, numberOfFractionalDigits);
+	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterField(name, value, numberOfFractionalDigits);
 }

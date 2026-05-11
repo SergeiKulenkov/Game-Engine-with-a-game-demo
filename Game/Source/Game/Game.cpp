@@ -36,7 +36,7 @@ void Game::Start()
 {
 #ifdef DEBUG
 	m_Scene->Start(true);
-#elif
+#else
 	m_Scene->Start(false);
 #endif
 	m_Scene->CreateEntity<Player>();
