@@ -13,8 +13,10 @@
 * game window's title and size are set in the main() function located in main.cpp
 
 ### Collisions demo
-![CollisionsDemo](ReadmeVisuals/CollisionsDemo.mp4)
+![CollisionsDemoPreview](ReadmeVisuals/CollisionsDemoPreview.png)
 Demo with a controllable player sprite, 4 walls and 200 dynamic obstacles. Also showcases the Quadtree optimization for collision detection—without it the frame time is 4.5 times higher (4ms VS 18ms) even when the tree is rebuilt every frame.
+(the GIF format looks very slow, it's actually alright, video files can't be played here)
+![CollisionsDemo](ReadmeVisuals/CollisionsDemo.gif)
 
 ## Build system
 Premake script files for the Engine static library and the Game main project.
