@@ -88,7 +88,7 @@ private:
 	bool CheckCircles(const glm::vec2& centerA, const float radiusA, const glm::vec2& centerB, const float radiusB, const std::shared_ptr<Collision>& collision);
 
 	bool RaycastAgainstBox(const std::shared_ptr<BoxCollider>& box, const glm::vec2& rayOrigin, const glm::vec2& rayEnd, const bool infiniteRay, RaycastHit& hitResult);
-	bool RaycastAgainstCircle(const std::shared_ptr<CircleCollider> circle, const glm::vec2& rayOrigin, const glm::vec2& rayEnd, const bool infiniteRay, RaycastHit& hitResult);
+	bool RaycastAgainstCircle(const std::shared_ptr<CircleCollider>& circle, const glm::vec2& rayOrigin, const glm::vec2& rayEnd, const bool infiniteRay, RaycastHit& hitResult);
 
 	////////////////////
 

@@ -83,12 +83,19 @@ void Player::DrawDebug(const RendererDebug& rendererDebug)
 	//std::shared_ptr<RaycastHit> hitResult = std::make_shared<RaycastHit>();
 	//const glm::vec2 origin = m_Transform->position + m_Transform->rotation * 20.f;
 	//const float length = 80.f;
-	//rendererDebug.DrawLine(origin, origin + m_Transform->rotation * length, Colour::green);
 	//const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
 	//ASSERT_SCENE_SHARED_PTR(sharedScene);
-	//if (sharedScene->Raycast(origin, m_Transform->rotation, length, hitResult))
+
+	//for (int i = 0; i < 9; i++)
 	//{
-	//	rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);
+	//	glm::vec2 dir = m_Transform->rotation;
+	//	dir.y -= 0.2f * i;
+	//	rendererDebug.DrawLine(origin, origin + dir * length, Colour::green);
+
+	//	if (sharedScene->Raycast(origin, dir, length, hitResult))
+	//	{
+	//		rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);
+	//	}
 	//}
 
 	// draw box collider

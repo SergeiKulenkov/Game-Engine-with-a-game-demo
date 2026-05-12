@@ -136,22 +136,23 @@ bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResu
 	const bool infiniteRay = ((ray.length == std::numeric_limits<float>::infinity()) || (ray.length == std::numeric_limits<float>::max()));
 	const glm::vec2 rayEnd = infiniteRay ? (ray.origin + ray.direction) : (ray.origin + ray.direction * ray.length);
 
-	// TODO: add optimization to not check every collider
 	for (size_t i = 0; i < m_Colliders.size(); i++)
 	{
-		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[i].lock();
-		ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
-		if (!sharedColliderA->IsEnabled()) continue;
+		const std::shared_ptr<Collider> sharedCollider = m_Colliders[i].lock();
+		ASSERT_COLLIDER_SHARED_PTR(sharedCollider);
+		if (!sharedCollider->IsEnabled()) continue;
 
-		const ShapeType shape = sharedColliderA->GetType();
+		// here could be some optimization condition to not check every collider, maybe some spatial hashing
+		// checking only colliders in the general ray's direction doesn't help
+		const ShapeType shape = sharedCollider->GetType();
 		if (shape == ShapeType::Box)
 		{
-			isIntersecting = RaycastAgainstBox(std::dynamic_pointer_cast<BoxCollider>(sharedColliderA), ray.origin, rayEnd, infiniteRay, currentHitResult);
-			
+			isIntersecting = RaycastAgainstBox(std::dynamic_pointer_cast<BoxCollider>(sharedCollider), ray.origin, rayEnd, infiniteRay, currentHitResult);
+
 		}
 		else if (shape == ShapeType::Circle)
 		{
-			isIntersecting = RaycastAgainstCircle(std::dynamic_pointer_cast<CircleCollider>(sharedColliderA), ray.origin, rayEnd, infiniteRay, currentHitResult);
+			isIntersecting = RaycastAgainstCircle(std::dynamic_pointer_cast<CircleCollider>(sharedCollider), ray.origin, rayEnd, infiniteRay, currentHitResult);
 		}
 
 		if (isIntersecting)
@@ -210,7 +211,7 @@ bool Physics::RaycastAgainstBox(const std::shared_ptr<BoxCollider>& box, const g
 	return isIntersecting;
 }
 
-bool Physics::RaycastAgainstCircle(const std::shared_ptr<CircleCollider> circle, const glm::vec2& rayOrigin, const glm::vec2& rayEnd, const bool infiniteRay, RaycastHit& hitResult)
+bool Physics::RaycastAgainstCircle(const std::shared_ptr<CircleCollider>& circle, const glm::vec2& rayOrigin, const glm::vec2& rayEnd, const bool infiniteRay, RaycastHit& hitResult)
 {
 	bool isIntersecting = false;
 	const glm::vec2 directionToCircle = rayOrigin - circle->GetPosition();

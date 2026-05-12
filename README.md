@@ -8,18 +8,18 @@
 * Image class for rendering image files through ImGUI and vulkan
 * optional rendering of debug visuals for entities
 * Physics class for collision and raycast processing
-* dynamic—movable, resizable, can be hidden by pressing Tab—Debug window with an ability to register new displayble fields
-* And Game demo with a movable Player object—entity with a few components
+* dynamic—movable, resizable, can be hidden by pressing tilde—Debug window with an ability to register new displayble fields
+* And Game demo with a simple environment full of random obstacles and a movable Player object—entity with a few components
 * game window's title and size are set in the main() function located in main.cpp
 
 ### Collisions demo
-![CollisionsDemo](ReadmeVisuals/RigidbodyCollisions.gif)
-Demo with controllable player sprite, 4 walls and 100 dynamic obstacles. Also showcases the AABB optimization for collision detection—without it the frame time is 2.5 times higher.
+![CollisionsDemo](ReadmeVisuals/CollisionsDemo.mp4)
+Demo with a controllable player sprite, 4 walls and 200 dynamic obstacles. Also showcases the Quadtree optimization for collision detection—without it the frame time is 4.5 times higher (4ms VS 18ms) even when the tree is rebuilt every frame.
 
 ## Build system
 Premake script files for the Engine static library and the Game main project.
 
-Run Scripts/Setup.bat to create project files and VS solution.
+Run Scripts/Setup.bat to install Premake and create project files and VS solution.
 
 ### Requirements - installed Vulkan SDK
 
