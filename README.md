@@ -14,9 +14,9 @@
 
 ### Collisions demo
 ![CollisionsDemoPreview](ReadmeVisuals/CollisionsDemoPreview.png)
-Demo with a controllable player sprite, 4 walls and 200 dynamic obstacles. Also showcases the Quadtree optimization for collision detection—without it the frame time is 4.5 times higher (4ms VS 18ms) even when the tree is rebuilt every frame.
-(the GIF format looks very slow, it's actually alright, video files can't be played here)
+Demo with a controllable player sprite, 4 walls and 200 dynamic obstacles. Also showcases the Quadtree optimization for collision detection—without it the frame time is 4.5 times higher (4ms VS 18ms in a debug build) even when the tree is rebuilt every frame.
 ![CollisionsDemo](ReadmeVisuals/CollisionsDemo.gif)
+(the GIF format looks very slow, it's actually alright, video files can't be played here)
 
 ## Build system
 Premake script files for the Engine static library and the Game main project.

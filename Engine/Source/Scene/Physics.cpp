@@ -24,7 +24,7 @@ void Physics::Update(float deltaTime)
 void Physics::QuadTreeCollisionDetection()
 {
 	// build the tree (it should be a dynamic tree, but rebuilding is still faster than checking every collider against every other)
-	// actually for 205 entities this is around 4 times faster, 18ms VS 4ms
+	// actually for 205 entities this is around 4 times faster, 18ms VS 4ms in a debug build
 	for (const std::weak_ptr<Collider>& collider : m_Colliders)
 	{
 		const std::shared_ptr<Collider> sharedCollider = collider.lock();
@@ -307,13 +307,6 @@ void Physics::ResolveCollision(const size_t indexA, const size_t indexB, const s
 	else
 	{
 		std::shared_ptr<Collision> collisionB = std::make_shared<Collision>(*collision);
-		collision->entity = sharedColliderB->GetEntity();
-		sharedColliderA->OnCollision(collision);
-
-		// check if not destroyed
-		collisionB->entity = sharedColliderA->GetEntity();
-		sharedColliderB->OnCollision(collisionB);
-
 		const std::shared_ptr<Rigidbody> sharedRBA = m_Rigidbodies[sharedColliderA->GetRigidbodyId()].lock();
 		ASSERT_RIGIDBODY_SHARED_PTR(sharedRBA);
 		const std::shared_ptr<Rigidbody> sharedRBB = m_Rigidbodies[sharedColliderB->GetRigidbodyId()].lock();
@@ -329,6 +322,12 @@ void Physics::ResolveCollision(const size_t indexA, const size_t indexB, const s
 			sharedRBA->GetLinearVelocity() -= sharedRBA->GetInverseMass() * j * collision->normal;
 			sharedRBB->GetLinearVelocity() += sharedRBA->GetInverseMass() * j * collision->normal;
 		}
+
+		collision->entity = sharedColliderB->GetEntity();
+		sharedColliderA->OnCollision(collision);
+
+		collisionB->entity = sharedColliderA->GetEntity();
+		sharedColliderB->OnCollision(collisionB);
 	}
 }
 

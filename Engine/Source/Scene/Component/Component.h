@@ -16,12 +16,8 @@ public:
 
 	virtual ~Component() {}
 
-	std::shared_ptr<Entity> GetEntity() const
-	{
-		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-		ASSERT_ENTITY_SHARED_PTR(sharedEntity);
-		return sharedEntity;
-	}
+	// may return a nullptr
+	std::shared_ptr<Entity> GetEntity() const { return m_Entity.lock(); }
 
 protected:
 	virtual void OnInit() {}

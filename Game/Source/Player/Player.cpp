@@ -59,7 +59,11 @@ void Player::Update(float deltaTime)
 
 void Player::OnCollision(const std::shared_ptr<Collision>& other)
 {
-	//m_Speed = 0.f;
+	m_Speed = 0.f;
+
+	//const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
+	//ASSERT_SCENE_SHARED_PTR(sharedScene);
+	//sharedScene->DestroyEntity(other->entity.lock()->GetId());
 }
 
 glm::vec2 Player::GetMovementInput() const
