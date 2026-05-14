@@ -6,7 +6,7 @@
 
 #include <glm/glm.hpp>
 
-#include "Utility.h"
+#include "../Utility.h"
 
 constexpr uint16_t MAX_DEPTH = 8;
 constexpr uint16_t QUAD_COUNT = 4;

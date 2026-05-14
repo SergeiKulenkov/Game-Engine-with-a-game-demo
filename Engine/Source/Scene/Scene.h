@@ -52,8 +52,7 @@ struct RendererDebug
 class Scene : public std::enable_shared_from_this<Scene>
 {
 public:
-	Scene();
-
+	Scene() {}
 	~Scene();
 
 	void Start(bool displayDebugWindow = false);

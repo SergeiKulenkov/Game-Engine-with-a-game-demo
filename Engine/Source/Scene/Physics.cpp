@@ -8,6 +8,12 @@
 
 ////////////////////
 
+void Physics::Start(const glm::vec2& screenSize)
+{
+	m_QuadTree = QuadTree<size_t>(glm::vec2(0.f, 0.f), screenSize);
+	m_SpatialHashGrid = SpatialHashGrid(screenSize);
+}
+
 void Physics::Update(float deltaTime)
 {
 	for (std::weak_ptr<Rigidbody>& rigidbody : m_Rigidbodies)
@@ -17,8 +23,46 @@ void Physics::Update(float deltaTime)
 		sharedRigidbody->Update(deltaTime);
 	}
 
+	// TODO: hash grid collisions
+	// first call Update for each non static collider, then Query
 	QuadTreeCollisionDetection();
 	//SimpleCollisionDetections();
+}
+
+size_t Physics::AddCollider(const std::weak_ptr<Collider>& collider)
+{
+	m_Colliders.push_back(collider);
+	if (!collider.expired())
+	{
+		const std::shared_ptr<Collider> sharedCollider = collider.lock();
+		m_SpatialHashGrid.Insert(sharedCollider->GetAABB(), m_Colliders.size() - 1);
+	}
+
+	return m_Colliders.size() - 1;
+}
+
+void Physics::RemoveCollider(const size_t id)
+{
+	if (!m_Colliders[id].expired())
+	{
+		const std::shared_ptr<Collider> sharedCollider = m_Colliders[id].lock();
+		m_SpatialHashGrid.Remove(sharedCollider->GetAABB(), sharedCollider->GetId());
+	}
+
+	m_Colliders[id] = m_Colliders[m_Colliders.size() - 1];
+	m_Colliders.pop_back();
+}
+
+size_t Physics::AddRigidbody(const std::weak_ptr<Rigidbody>& rigidbody)
+{
+	m_Rigidbodies.push_back(rigidbody);
+	return m_Rigidbodies.size() - 1;;
+}
+
+void Physics::RemoveRigidbody(const size_t id)
+{
+	m_Rigidbodies[id] = m_Rigidbodies[m_Rigidbodies.size() - 1];
+	m_Rigidbodies.pop_back();
 }
 
 void Physics::QuadTreeCollisionDetection()
@@ -99,30 +143,6 @@ void Physics::SimpleCollisionDetections()
 			}
 		}
 	}
-}
-
-size_t Physics::AddCollider(const std::weak_ptr<Collider>& collider)
-{
-	m_Colliders.push_back(collider);
-	return m_Colliders.size() - 1;
-}
-
-void Physics::RemoveCollider(const size_t id)
-{
-	m_Colliders[id] = m_Colliders[m_Colliders.size() - 1];
-	m_Colliders.pop_back();
-}
-
-size_t Physics::AddRigidbody(const std::weak_ptr<Rigidbody>& rigidbody)
-{
-	m_Rigidbodies.push_back(rigidbody);
-	return m_Rigidbodies.size() - 1;;
-}
-
-void Physics::RemoveRigidbody(const size_t id)
-{
-	m_Rigidbodies[id] = m_Rigidbodies[m_Rigidbodies.size() - 1];
-	m_Rigidbodies.pop_back();
 }
 
 bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult)

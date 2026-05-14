@@ -7,10 +7,6 @@
 
 ////////////////////
 
-Scene::Scene()
-{
-}
-
 Scene::~Scene()
 {
 	m_DrawList = nullptr;
@@ -18,6 +14,8 @@ Scene::~Scene()
 
 void Scene::Start(bool displayDebugWindow)
 {
+	m_Physics.Start(GetScreenSize());
+
 	if (displayDebugWindow)
 	{
 		m_DebugWindow = std::make_unique<DebugWindow>();

@@ -7,7 +7,8 @@
 
 #include "Component/Collider.h"
 #include "Component/Rigidbody.h"
-#include "../Utility/Quadtree.h"
+#include "../Utility/DataStructures/Quadtree.h"
+#include "../Utility/DataStructures/SpatialHashGrid.h"
 
 class Scene;
 class Entity;
@@ -43,10 +44,8 @@ struct RaycastHit
 class Physics
 {
 public:
-	void Update(float deltaTime);
-
 	size_t AddCollider(const std::weak_ptr<Collider>& collider);
-	void RemoveCollider(const size_t id); 
+	void RemoveCollider(const size_t id);
 
 	size_t AddRigidbody(const std::weak_ptr<Rigidbody>& rigidbody);
 	void RemoveRigidbody(const size_t id);
@@ -56,8 +55,11 @@ public:
 
 private:
 	Physics() {}
-
 	~Physics() {}
+
+	void Start(const glm::vec2& screenSize);
+
+	void Update(float deltaTime);
 
 	// using a static quad tree (it's rebuilt every frame)
 	void QuadTreeCollisionDetection();
@@ -96,6 +98,7 @@ private:
 	std::vector<std::weak_ptr<Rigidbody>> m_Rigidbodies;
 	
 	QuadTree<size_t> m_QuadTree = QuadTree<size_t>(glm::vec2(0.f, 0.f), glm::vec2(1920.f, 1080.f));
+	SpatialHashGrid m_SpatialHashGrid = SpatialHashGrid(glm::vec2(1920, 1080));
 
 	friend class Scene;
 };
