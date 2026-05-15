@@ -2,12 +2,12 @@
 #include <memory>
 #include <assert.h>
 
+class Entity;
+
 #define ASSERT_ENTITY_SHARED_PTR(entity) assert(entity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
 #define ASSERRT_HAS_TRANSFORM(hasTransform) assert(hasTransform && "Tranform Component is not present.");
 
 ////////////////////
-
-class Entity;
 
 class Component
 {

@@ -61,6 +61,7 @@ private:
 
 	void Update(float deltaTime);
 
+	void SpatialHashGridCollisions();
 	// using a static quad tree (it's rebuilt every frame)
 	void QuadTreeCollisionDetection();
 	// check every collider against every other collider, O(n^2)

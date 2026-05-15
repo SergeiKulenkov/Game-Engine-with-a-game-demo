@@ -7,9 +7,10 @@
 #include <Scene/Component/Collider.h>
 #include <Scene/Component/Rigidbody.h>
 
-#include <Scene/Scene.h>
-#include <Scene/Physics.h>
-#include <Utility/Utility.h>
+#include "Scene/Scene.h"
+#include "Scene/Physics.h"
+#include "Utility/Utility.h"
+#include "../Environment/Obstacle.h"
 
 ////////////////////
 
@@ -103,10 +104,10 @@ void Player::DrawDebug(const RendererDebug& rendererDebug)
 	//}
 
 	// draw box collider
-	//const std::array<glm::vec2, 4> vertices = GetComponent<BoxCollider>()->GetVertices();
+	//AABB boundingBox = GetComponent<BoxCollider>()->GetAABB();
 	//for (size_t i = 0; i < vertices.size(); i++)
 	//{
-	//	rendererDebug.DrawLine(vertices[i], vertices[(i + 1) % vertices.size()], Colour::green);
+		//rendererDebug.DrawRectangle(boundingBox.min, boundingBox.max, Colour::green);
 	//}
 
 	// draw circle collider

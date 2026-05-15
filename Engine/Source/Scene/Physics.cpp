@@ -23,9 +23,8 @@ void Physics::Update(float deltaTime)
 		sharedRigidbody->Update(deltaTime);
 	}
 
-	// TODO: hash grid collisions
-	// first call Update for each non static collider, then Query
-	QuadTreeCollisionDetection();
+	SpatialHashGridCollisions();
+	//QuadTreeCollisionDetection();
 	//SimpleCollisionDetections();
 }
 
@@ -65,15 +64,54 @@ void Physics::RemoveRigidbody(const size_t id)
 	m_Rigidbodies.pop_back();
 }
 
-void Physics::QuadTreeCollisionDetection()
+void Physics::SpatialHashGridCollisions()
 {
-	// build the tree (it should be a dynamic tree, but rebuilding is still faster than checking every collider against every other)
-	// actually for 205 entities this is around 4 times faster, 18ms VS 4ms in a debug build
 	for (const std::weak_ptr<Collider>& collider : m_Colliders)
 	{
 		const std::shared_ptr<Collider> sharedCollider = collider.lock();
 		ASSERT_COLLIDER_SHARED_PTR(sharedCollider);
+		// don't need to update static colliders
+		if (!sharedCollider->IsEnabled() || !sharedCollider->IsDynamic()) continue;
 
+		m_SpatialHashGrid.Update(sharedCollider->GetAABB(), sharedCollider->GetId());
+	}
+
+	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
+	{
+		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
+		ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
+		if (!sharedColliderA->IsEnabled()) continue;
+
+		for (const size_t id : m_SpatialHashGrid.Query(sharedColliderA->GetAABB()))
+		{
+			if (id != sharedColliderA->GetId() && id < m_Colliders.size())
+			{
+				const std::shared_ptr<Collider> sharedColliderB = m_Colliders[id].lock();
+				ASSERT_COLLIDER_SHARED_PTR(sharedColliderB);
+
+				// skip if second is disabled or both are static
+				if (!sharedColliderB->IsEnabled() ||
+					(!sharedColliderA->IsDynamic() && !sharedColliderB->IsDynamic()))
+				{
+					continue;
+				}
+
+				std::shared_ptr<Collision> collision = std::make_shared<Collision>();
+				Collide(indexA, sharedColliderA->GetType(), id, sharedColliderB->GetType(), collision);
+				if (collision->detected) ResolveCollision(indexA, id, collision);
+			}
+		}
+	}
+}
+
+void Physics::QuadTreeCollisionDetection()
+{
+	// build the tree (it should be a dynamic tree, but rebuilding is still faster than checking every collider against every other)
+	// actually for 205 entities this is around 4.5 times faster, 18ms VS 4ms in a debug build
+	for (const std::weak_ptr<Collider>& collider : m_Colliders)
+	{
+		const std::shared_ptr<Collider> sharedCollider = collider.lock();
+		ASSERT_COLLIDER_SHARED_PTR(sharedCollider);
 		if (!sharedCollider->IsEnabled()) continue;
 
 		const glm::vec2 size = glm::vec2(sharedCollider->GetAABB().max.x - sharedCollider->GetAABB().min.x, sharedCollider->GetAABB().max.y - sharedCollider->GetAABB().min.y);
@@ -85,7 +123,6 @@ void Physics::QuadTreeCollisionDetection()
 	{
 		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
 		ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
-
 		if (!sharedColliderA->IsEnabled()) continue;
 
 		const glm::vec2 size = glm::vec2(sharedColliderA->GetAABB().max.x - sharedColliderA->GetAABB().min.x, sharedColliderA->GetAABB().max.y - sharedColliderA->GetAABB().min.y);
@@ -120,7 +157,6 @@ void Physics::SimpleCollisionDetections()
 	{
 		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
 		ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
-
 		if (!sharedColliderA->IsEnabled()) continue;
 
 		for (size_t indexB = indexA + 1; indexB < m_Colliders.size(); indexB++)

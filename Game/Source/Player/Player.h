@@ -15,9 +15,9 @@ class Player : public Entity
 {
 public:
 	Player() {}
-
 	~Player() {}
 
+protected:
 	virtual void OnInit() override;
 
 	virtual void Update(float deltaTime) override;

@@ -10,6 +10,7 @@
 
 struct Collsion;
 class Rigidbody;
+class Entity;
 
 #define ASSERT_COLLIDER_DYNAMIC(isDynamic) assert(isDynamic && "This collider is not dynamic, so doesn't have a rigidbody connected to it.");
 
@@ -108,6 +109,13 @@ protected:
 		if (!m_IsDynamic) m_AABB = GetAABB();
 	}
 
+	void RegisterCollider(const size_t colliderType)
+	{
+		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
+		ASSERT_ENTITY_SHARED_PTR(sharedEntity);
+		m_Id = sharedEntity->RegisterCollider(colliderType);
+	}
+
 	////////////////////
 
 	size_t m_Id = 0;
@@ -142,9 +150,7 @@ public:
 	virtual void OnInit() override
 	{
 		Collider::OnInit();
-		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-		ASSERT_ENTITY_SHARED_PTR(sharedEntity);
-		m_Id = sharedEntity->RegisterCollider(typeid(BoxCollider).hash_code());
+		RegisterCollider(typeid(BoxCollider).hash_code());
 	}
 
 	glm::vec2 GetSize() const { return m_Size; }
@@ -214,9 +220,7 @@ public:
 	virtual void OnInit() override
 	{
 		Collider::OnInit();
-		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-		ASSERT_ENTITY_SHARED_PTR(sharedEntity);
-		m_Id = sharedEntity->RegisterCollider(typeid(CircleCollider).hash_code());
+		RegisterCollider(typeid(CircleCollider).hash_code());
 	}
 
 	float GetRadius() const { return m_Radius; }
