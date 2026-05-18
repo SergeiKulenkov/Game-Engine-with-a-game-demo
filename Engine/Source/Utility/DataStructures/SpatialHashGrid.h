@@ -1,5 +1,5 @@
 #pragma once
-#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <array>
 #include <algorithm>
@@ -34,7 +34,7 @@ struct CellElement
 
 	// id from an outside storage
 	size_t id;
-	int16_t queryId = -1;
+
 	std::array<Cell, 2> cellsRange = { Cell(), Cell() };
 };
 
@@ -52,12 +52,21 @@ public:
 	SpatialHashGrid(const glm::vec2& areaSize, const uint16_t gridSizeX = 64, const uint16_t gridSizeY = 36)
 		: m_GridSizeX(gridSizeX), m_GridSizeY(gridSizeY)
 	{
-		m_Map.reserve(gridSizeX * gridSizeY);
-
 		const uint16_t cellSize = static_cast<uint16_t>(areaSize.x) / gridSizeX;
 		if (cellSize == (areaSize.y / gridSizeY))
 		{
 			m_CellSize = cellSize;
+		}
+
+		m_Grid.resize(m_GridSizeX * m_GridSizeY);
+		uint16_t rowIndex = 0;
+		for (uint16_t row = 0; row < m_GridSizeY; row++)
+		{
+			rowIndex = row * m_GridSizeX;
+			for (uint16_t column = 0; column < m_GridSizeX; column++)
+			{
+				m_Grid[rowIndex + column].reserve(defaultElementsCount);
+			}
 		}
 	}
 
@@ -69,53 +78,43 @@ public:
 		CellElement element(Id);
 		element.cellsRange = {cellA, cellB};
 
-		for (uint16_t x = cellA.x; x <= cellB.x; x++)
+		uint16_t rowIndex = 0;
+		for (uint16_t row = cellA.x; row <= cellB.x; row++)
 		{
-			for (uint16_t y = cellA.y; y <= cellB.y; y++)
+			rowIndex = row * m_GridSizeX;
+			for (uint16_t column = cellA.y; column <= cellB.y; column++)
 			{
-				// operator [] adds a new key if it's not present which is fine here
-				m_Map[Cell(x, y)].emplace_back(element);
+				m_Grid[rowIndex + column].emplace_back(element);
 			}
 		}
-	}
-
-	std::vector<size_t> Query(const glm::vec2& position, const glm::vec2& areaSize)
-	{
-		const glm::vec2 min = glm::vec2(position.x - areaSize.x / 2.f, position.y - areaSize.y / 2.f);
-		const glm::vec2 max = glm::vec2(position.x + areaSize.x / 2.f, position.y + areaSize.y / 2.f);
-		return Query(AABB(min, max));
 	}
 
 	// returning Ids
-	std::vector<size_t> Query(const AABB& boundingBox)
+	void Query(const glm::vec2& position, const glm::vec2& areaSize, std::unordered_set<size_t>& result)
 	{
-		std::vector<size_t> result;
+		const glm::vec2 min = glm::vec2(position.x - areaSize.x / 2.f, position.y - areaSize.y / 2.f);
+		const glm::vec2 max = glm::vec2(position.x + areaSize.x / 2.f, position.y + areaSize.y / 2.f);
+		Query(AABB(min, max), result);
+	}
+
+	// returning Ids
+	void Query(const AABB& boundingBox, std::unordered_set<size_t>& result)
+	{
 		const Cell cellA = GetCell(boundingBox.min);
 		const Cell cellB = GetCell(boundingBox.max);
-		Cell currentCell;
 
-		m_QueryId++;
-		for (uint16_t x = cellA.x; x <= cellB.x; x++)
+		uint16_t rowIndex = 0;
+		for (uint16_t row = cellA.x; row <= cellB.x; row++)
 		{
-			for (uint16_t y = cellA.y; y <= cellB.y; y++)
+			rowIndex = row * m_GridSizeX;
+			for (uint16_t column = cellA.y; column <= cellB.y; column++)
 			{
-				currentCell = Cell(x, y);
-				if (m_Map.find(currentCell) != m_Map.end())
+				for (const CellElement& cellElement : m_Grid[rowIndex + column])
 				{
-					for (CellElement& cellElement : m_Map.at(currentCell))
-					{
-						if (cellElement.queryId != m_QueryId)
-						{
-							// if the same element is found in another cell during this query, it won't be added
-							cellElement.queryId = m_QueryId;
-							result.emplace_back(cellElement.id);
-						}
-					}
+					result.insert(cellElement.id);
 				}
 			}
 		}
-
-		return result;
 	}
 
 	void Update(const AABB& boundingBox, const size_t Id)
@@ -125,21 +124,20 @@ public:
 		bool sameCells = false;
 		const Cell cellA = GetCell(boundingBox.min);
 		const Cell cellB = GetCell(boundingBox.max);
-		
-		for (uint16_t x = cellA.x; x <= cellB.x; x++)
+
+		uint16_t rowIndex = 0;
+		for (uint16_t row = cellA.x; row <= cellB.x; row++)
 		{
-			for (uint16_t y = cellA.y; y <= cellB.y; y++)
+			rowIndex = row * m_GridSizeX;
+			for (uint16_t column = cellA.y; column <= cellB.y; column++)
 			{
-				const Cell currentCell = Cell(x, y);
-				if (m_Map.find(currentCell) != m_Map.end())
+				const std::vector<CellElement>& vector = m_Grid[rowIndex + column];
+				auto elementPosition = std::find_if(vector.begin(), vector.end(), [Id](const CellElement& element) { return element.id == Id; });
+
+				if (elementPosition != vector.end())
 				{
-					std::vector<CellElement>& vector = m_Map.at(currentCell);
-					auto elementPosition = std::find_if(vector.begin(), vector.end(), [Id](CellElement& element) { return element.id == Id; });
-					if (elementPosition != vector.end())
-					{
-						sameCells = (elementPosition->cellsRange[0] == cellA && elementPosition->cellsRange[1] == cellB);
-						break;
-					}
+					sameCells = (elementPosition->cellsRange[0] == cellA) && (elementPosition->cellsRange[1] == cellB);
+					break;
 				}
 			}
 
@@ -157,22 +155,20 @@ public:
 	{
 		const Cell cellA = GetCell(boundingBox.min);
 		const Cell cellB = GetCell(boundingBox.max);
-		Cell currentCell;
 
-		for (uint16_t x = cellA.x; x <= cellB.x; x++)
+		uint16_t rowIndex = 0;
+		for (uint16_t row = cellA.x; row <= cellB.x; row++)
 		{
-			for (uint16_t y = cellA.y; y <= cellB.y; y++)
+			rowIndex = row * m_GridSizeX;
+			for (uint16_t column = cellA.y; column <= cellB.y; column++)
 			{
-				currentCell = Cell(x, y);
-				if (m_Map.find(currentCell) != m_Map.end())
+				std::vector<CellElement>& vector = m_Grid[rowIndex + column];
+				auto elementPosition = std::find_if(vector.begin(), vector.end(), [Id](CellElement& element) { return element.id == Id; });
+
+				if (elementPosition != vector.end())
 				{
-					std::vector<CellElement>& vector = m_Map.at(currentCell);
-					auto elementPosition = std::find_if(vector.begin(), vector.end(), [Id](CellElement& element) { return element.id == Id; });
-					if (elementPosition != vector.end())
-					{
-						*elementPosition = vector[vector.size() - 1];
-						vector.pop_back();
-					}
+					*elementPosition = vector[vector.size() - 1];
+					vector.pop_back();
 				}
 			}
 		}
@@ -188,13 +184,13 @@ private:
 
 	////////////////////
 
+	static constexpr uint16_t defaultElementsCount = 8;
+
 	uint16_t m_GridSizeX = 1;
 	uint16_t m_GridSizeY = 1;
 
-	// 30x30 at 1080p resolution
+	// 30x30 at 1080p resolution, cells bigger than 40 seem to make performance worse
 	uint16_t m_CellSize = 1;
 
-	uint16_t m_QueryId = 0;
-
-	std::unordered_map<Cell, std::vector<CellElement>> m_Map;
+	std::vector<std::vector<CellElement>> m_Grid;
 };

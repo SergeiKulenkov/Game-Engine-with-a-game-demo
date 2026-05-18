@@ -100,6 +100,7 @@ private:
 	
 	QuadTree<size_t> m_QuadTree = QuadTree<size_t>(glm::vec2(0.f, 0.f), glm::vec2(1920.f, 1080.f));
 	SpatialHashGrid m_SpatialHashGrid = SpatialHashGrid(glm::vec2(1920, 1080));
+	std::unordered_set<size_t> m_QueryResults;
 
 	friend class Scene;
 };

@@ -11,7 +11,7 @@ class Collider;
 struct Collision;
 class Rigidbody;
 
-#define ASSERT_SCENE_SHARED_PTR(scene) assert(scene && "This Entity's reference to the Scene is null");
+#define ASSERT_SCENE_SHARED_PTR(scene) assert(scene && "This Entity's reference to the Scene is null.");
 #define ASSERT_COMPONENT_PRESENT(present) assert(present && "This Component is already present.");
 #define ASSERT_COMPONENT_NOT_PRESENT(notPresent) assert(notPresent && "This Component is not present.");
 #define ASSERT_DERIVED_FROM_COMPONENT(isDerived) static_assert(isDerived, "T must be of type Component.");

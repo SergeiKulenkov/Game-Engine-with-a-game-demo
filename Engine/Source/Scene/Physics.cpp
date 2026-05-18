@@ -2,6 +2,7 @@
 #include <limits>
 
 #include "../Utility/Utility.h"
+#include "../Utility/Timer.h"
 
 #define ASSERT_COLLIDER_SHARED_PTR(collider) assert(collider && "Can't get Collider's shared pointer because it's no longer valid.");
 #define ASSERT_RIGIDBODY_SHARED_PTR(rigidbody) assert(rigidbody && "Can't get Rigidbody's shared pointer because it's no longer valid.");
@@ -66,6 +67,7 @@ void Physics::RemoveRigidbody(const size_t id)
 
 void Physics::SpatialHashGridCollisions()
 {
+	//ScopedTimer timer("Update", true);
 	for (const std::weak_ptr<Collider>& collider : m_Colliders)
 	{
 		const std::shared_ptr<Collider> sharedCollider = collider.lock();
@@ -76,13 +78,17 @@ void Physics::SpatialHashGridCollisions()
 		m_SpatialHashGrid.Update(sharedCollider->GetAABB(), sharedCollider->GetId());
 	}
 
+	//ScopedTimer timer("Detection", true);
 	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
 	{
 		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
 		ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
 		if (!sharedColliderA->IsEnabled()) continue;
 
-		for (const size_t id : m_SpatialHashGrid.Query(sharedColliderA->GetAABB()))
+		m_QueryResults.clear();
+		m_QueryResults.reserve(8);
+		m_SpatialHashGrid.Query(sharedColliderA->GetAABB(), m_QueryResults);
+		for (const size_t id : m_QueryResults)
 		{
 			if (id != sharedColliderA->GetId() && id < m_Colliders.size())
 			{

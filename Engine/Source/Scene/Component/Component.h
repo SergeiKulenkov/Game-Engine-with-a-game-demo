@@ -13,7 +13,6 @@ class Component
 {
 public:
 	Component() {}
-
 	virtual ~Component() {}
 
 	// may return a nullptr
