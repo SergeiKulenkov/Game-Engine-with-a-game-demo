@@ -1,5 +1,5 @@
 #pragma once
-#include <Scene/Scene.h>
+#include "CurrentScene.h"
 
 ////////////////////
 
@@ -18,10 +18,10 @@ public:
 
 	void SetSceneDefaultSize(const glm::vec2& size) { m_Scene->SetDefaultScreenSize(size); }
 
-	std::shared_ptr<Scene> GetScene() { return m_Scene; }
+	std::shared_ptr<Scene> GetScene();
 
 private:
 	Game();
 
-	std::shared_ptr<Scene> m_Scene = std::make_shared<Scene>();
+	std::shared_ptr<CurrentScene> m_Scene = std::make_shared<CurrentScene>();
 };

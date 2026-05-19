@@ -33,7 +33,7 @@ private:
 
 	static constexpr std::string_view defaultTag = "Player";
 	static constexpr std::string_view spritePath = "../Assets/bee.png";
-	static constexpr glm::vec2 defaultPosition = glm::vec2(100.f, 100.f);
+	static constexpr glm::vec2 defaultPosition = glm::vec2(500.f, 300.f);
 
 	static constexpr float acceleration = 2.75f;
 	static constexpr float deceleration = 2.15f;

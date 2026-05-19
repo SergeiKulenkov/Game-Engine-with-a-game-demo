@@ -1,8 +1,12 @@
 #include "Physics.h"
+
 #include <limits>
+
+#include "Component/Rigidbody.h"
 
 #include "../Utility/Utility.h"
 #include "../Utility/Timer.h"
+#include "../Utility/DataStructures/SpatialHashGrid.h"
 
 #define ASSERT_COLLIDER_SHARED_PTR(collider) assert(collider && "Can't get Collider's shared pointer because it's no longer valid.");
 #define ASSERT_RIGIDBODY_SHARED_PTR(rigidbody) assert(rigidbody && "Can't get Rigidbody's shared pointer because it's no longer valid.");
@@ -12,42 +16,61 @@
 void Physics::Start(const glm::vec2& screenSize)
 {
 	m_QuadTree = QuadTree<size_t>(glm::vec2(0.f, 0.f), screenSize);
-	m_SpatialHashGrid = SpatialHashGrid(screenSize);
+	//m_SpatialHashGrid = SpatialHashGrid(screenSize);
 }
 
 void Physics::Update(float deltaTime)
 {
-	for (std::weak_ptr<Rigidbody>& rigidbody : m_Rigidbodies)
+	m_QuadTree.Clear();
+
+	for (const std::weak_ptr<Collider>& collider : m_Colliders)
 	{
-		const std::shared_ptr<Rigidbody> sharedRigidbody = rigidbody.lock();
-		ASSERT_RIGIDBODY_SHARED_PTR(sharedRigidbody);
-		sharedRigidbody->Update(deltaTime);
+		const std::shared_ptr<Collider> sharedCollider = collider.lock();
+		ASSERT_COLLIDER_SHARED_PTR(sharedCollider);
+		// don't need to update static objects
+		//if (!sharedCollider->IsEnabled() || !sharedCollider->IsDynamic()) continue;
+
+		// TODO: remove after implementing dynamic quad tree, for now it needs to add static objects
+		if (sharedCollider->IsDynamic())
+		{
+			const std::shared_ptr<Rigidbody> sharedRigidbody = m_Rigidbodies[sharedCollider->GetRigidbodyId()].lock();
+			ASSERT_RIGIDBODY_SHARED_PTR(sharedRigidbody);
+			sharedRigidbody->Update(deltaTime);
+		}
+
+		//m_SpatialHashGrid.Update(sharedCollider->GetAABB(), sharedCollider->GetId());
+
+		// build the quad tree (it should be a dynamic tree, but rebuilding is still faster than checking every collider against every other)
+		// actually for 205 entities this is around 4.5 times faster, 18ms VS 4ms in a debug build
+		const AABB boundingBox = sharedCollider->GetAABB();
+		const glm::vec2 size = glm::vec2(boundingBox.max.x - boundingBox.min.x, boundingBox.max.y - boundingBox.min.y);
+		m_QuadTree.Insert(sharedCollider->GetId(), Area(sharedCollider->GetAABB().min, size));
 	}
 
-	SpatialHashGridCollisions();
-	//QuadTreeCollisionDetection();
+	//SpatialHashGridCollisions();
+	QuadTreeCollisionDetection();
 	//SimpleCollisionDetections();
 }
 
 size_t Physics::AddCollider(const std::weak_ptr<Collider>& collider)
 {
 	m_Colliders.push_back(collider);
-	if (!collider.expired())
-	{
-		const std::shared_ptr<Collider> sharedCollider = collider.lock();
-		m_SpatialHashGrid.Insert(sharedCollider->GetAABB(), m_Colliders.size() - 1);
-	}
+	//if (!collider.expired())
+	//{
+	//	const std::shared_ptr<Collider> sharedCollider = collider.lock();
+	//	m_SpatialHashGrid.Insert(sharedCollider->GetAABB(), m_Colliders.size() - 1);
+	//}
 
 	return m_Colliders.size() - 1;
 }
 
 void Physics::RemoveCollider(const size_t id)
 {
-	if (!m_Colliders[id].expired())
-	{
-		const std::shared_ptr<Collider> sharedCollider = m_Colliders[id].lock();
-		m_SpatialHashGrid.Remove(sharedCollider->GetAABB(), sharedCollider->GetId());
-	}
+	//if (!m_Colliders[id].expired())
+	//{
+	//	const std::shared_ptr<Collider> sharedCollider = m_Colliders[id].lock();
+	//	m_SpatialHashGrid.Remove(sharedCollider->GetAABB(), sharedCollider->GetId());
+	//}
 
 	m_Colliders[id] = m_Colliders[m_Colliders.size() - 1];
 	m_Colliders.pop_back();
@@ -67,17 +90,40 @@ void Physics::RemoveRigidbody(const size_t id)
 
 void Physics::SpatialHashGridCollisions()
 {
-	//ScopedTimer timer("Update", true);
-	for (const std::weak_ptr<Collider>& collider : m_Colliders)
-	{
-		const std::shared_ptr<Collider> sharedCollider = collider.lock();
-		ASSERT_COLLIDER_SHARED_PTR(sharedCollider);
-		// don't need to update static colliders
-		if (!sharedCollider->IsEnabled() || !sharedCollider->IsDynamic()) continue;
+	//ScopedTimer timer("Detection", true);
+	//for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
+	//{
+	//	const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
+	//	ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
+	//	if (!sharedColliderA->IsEnabled()) continue;
 
-		m_SpatialHashGrid.Update(sharedCollider->GetAABB(), sharedCollider->GetId());
-	}
+	//	m_QueryResults.clear();
+	//	m_QueryResults.reserve(8);
+	//	m_SpatialHashGrid.Query(sharedColliderA->GetAABB(), m_QueryResults);
+	//	for (const size_t id : m_QueryResults)
+	//	{
+	//		if (id != sharedColliderA->GetId() && id < m_Colliders.size())
+	//		{
+	//			const std::shared_ptr<Collider> sharedColliderB = m_Colliders[id].lock();
+	//			ASSERT_COLLIDER_SHARED_PTR(sharedColliderB);
 
+	//			// skip if second is disabled or both are static
+	//			if (!sharedColliderB->IsEnabled() ||
+	//				(!sharedColliderA->IsDynamic() && !sharedColliderB->IsDynamic()))
+	//			{
+	//				continue;
+	//			}
+
+	//			std::shared_ptr<Collision> collision = std::make_shared<Collision>();
+	//			Collide(indexA, sharedColliderA->GetType(), id, sharedColliderB->GetType(), collision);
+	//			if (collision->detected) ResolveCollision(indexA, id, collision);
+	//		}
+	//	}
+	//}
+}
+
+void Physics::QuadTreeCollisionDetection()
+{
 	//ScopedTimer timer("Detection", true);
 	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
 	{
@@ -85,54 +131,9 @@ void Physics::SpatialHashGridCollisions()
 		ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
 		if (!sharedColliderA->IsEnabled()) continue;
 
-		m_QueryResults.clear();
-		m_QueryResults.reserve(8);
-		m_SpatialHashGrid.Query(sharedColliderA->GetAABB(), m_QueryResults);
-		for (const size_t id : m_QueryResults)
-		{
-			if (id != sharedColliderA->GetId() && id < m_Colliders.size())
-			{
-				const std::shared_ptr<Collider> sharedColliderB = m_Colliders[id].lock();
-				ASSERT_COLLIDER_SHARED_PTR(sharedColliderB);
-
-				// skip if second is disabled or both are static
-				if (!sharedColliderB->IsEnabled() ||
-					(!sharedColliderA->IsDynamic() && !sharedColliderB->IsDynamic()))
-				{
-					continue;
-				}
-
-				std::shared_ptr<Collision> collision = std::make_shared<Collision>();
-				Collide(indexA, sharedColliderA->GetType(), id, sharedColliderB->GetType(), collision);
-				if (collision->detected) ResolveCollision(indexA, id, collision);
-			}
-		}
-	}
-}
-
-void Physics::QuadTreeCollisionDetection()
-{
-	// build the tree (it should be a dynamic tree, but rebuilding is still faster than checking every collider against every other)
-	// actually for 205 entities this is around 4.5 times faster, 18ms VS 4ms in a debug build
-	for (const std::weak_ptr<Collider>& collider : m_Colliders)
-	{
-		const std::shared_ptr<Collider> sharedCollider = collider.lock();
-		ASSERT_COLLIDER_SHARED_PTR(sharedCollider);
-		if (!sharedCollider->IsEnabled()) continue;
-
-		const glm::vec2 size = glm::vec2(sharedCollider->GetAABB().max.x - sharedCollider->GetAABB().min.x, sharedCollider->GetAABB().max.y - sharedCollider->GetAABB().min.y);
-		m_QuadTree.insert(sharedCollider->GetId(), Area(sharedCollider->GetAABB().min, size));
-	}
-
-	// check collisions
-	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
-	{
-		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
-		ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
-		if (!sharedColliderA->IsEnabled()) continue;
-
-		const glm::vec2 size = glm::vec2(sharedColliderA->GetAABB().max.x - sharedColliderA->GetAABB().min.x, sharedColliderA->GetAABB().max.y - sharedColliderA->GetAABB().min.y);
-		for (const auto& iterator : m_QuadTree.search(Area(sharedColliderA->GetAABB().min, size)))
+		const AABB boundingBox = sharedColliderA->GetAABB();
+		const glm::vec2 size = glm::vec2(boundingBox.max.x - boundingBox.min.x, boundingBox.max.y - boundingBox.min.y);
+		for (const auto& iterator : m_QuadTree.Query(Area(sharedColliderA->GetAABB().min, size)))
 		{
 			// exclude self
 			if (*iterator != sharedColliderA->GetId())
@@ -153,12 +154,11 @@ void Physics::QuadTreeCollisionDetection()
 			}
 		}
 	}
-
-	m_QuadTree.clear();
 }
 
 void Physics::SimpleCollisionDetections()
 {
+	//ScopedTimer timer("Detection", true);
 	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
 	{
 		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();

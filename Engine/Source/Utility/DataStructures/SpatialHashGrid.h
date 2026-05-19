@@ -3,8 +3,11 @@
 #include <vector>
 #include <array>
 #include <algorithm>
+#include <assert.h>
 
 #include <glm/glm.hpp>
+
+#define ASSERT_GRID_INDEX(index, gridSize) assert(index < gridSize && "Index out of range.");
 
 ////////////////////
 
@@ -65,6 +68,7 @@ public:
 			rowIndex = row * m_GridSizeX;
 			for (uint16_t column = 0; column < m_GridSizeX; column++)
 			{
+				ASSERT_GRID_INDEX(rowIndex + column, m_Grid.size());
 				m_Grid[rowIndex + column].reserve(defaultElementsCount);
 			}
 		}
@@ -84,6 +88,7 @@ public:
 			rowIndex = row * m_GridSizeX;
 			for (uint16_t column = cellA.y; column <= cellB.y; column++)
 			{
+				ASSERT_GRID_INDEX(rowIndex + column, m_Grid.size());
 				m_Grid[rowIndex + column].emplace_back(element);
 			}
 		}
@@ -109,6 +114,7 @@ public:
 			rowIndex = row * m_GridSizeX;
 			for (uint16_t column = cellA.y; column <= cellB.y; column++)
 			{
+				ASSERT_GRID_INDEX(rowIndex + column, m_Grid.size());
 				for (const CellElement& cellElement : m_Grid[rowIndex + column])
 				{
 					result.insert(cellElement.id);
@@ -131,6 +137,7 @@ public:
 			rowIndex = row * m_GridSizeX;
 			for (uint16_t column = cellA.y; column <= cellB.y; column++)
 			{
+				ASSERT_GRID_INDEX(rowIndex + column, m_Grid.size());
 				const std::vector<CellElement>& vector = m_Grid[rowIndex + column];
 				auto elementPosition = std::find_if(vector.begin(), vector.end(), [Id](const CellElement& element) { return element.id == Id; });
 
@@ -162,6 +169,7 @@ public:
 			rowIndex = row * m_GridSizeX;
 			for (uint16_t column = cellA.y; column <= cellB.y; column++)
 			{
+				ASSERT_GRID_INDEX(rowIndex + column, m_Grid.size());
 				std::vector<CellElement>& vector = m_Grid[rowIndex + column];
 				auto elementPosition = std::find_if(vector.begin(), vector.end(), [Id](CellElement& element) { return element.id == Id; });
 

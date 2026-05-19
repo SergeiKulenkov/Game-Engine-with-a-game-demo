@@ -1,8 +1,7 @@
 #pragma once
 #include "Scene/Entity.h"
-#include "Scene/Scene.h"
-#include "Scene/Component/Collider.h"
-#include "Utility/Utility.h"
+#include <Scene/Scene.h>
+#include <Scene/Component/Collider.h>
 
 ////////////////////
 
@@ -14,46 +13,12 @@ public:
 
 	void ChangeColour(const uint32_t colour) { m_Colour = colour; }
 
-	void Setup(const ShapeType type)
-	{
-		AddComponent<Transform>(glm::vec2(Random::RandomInRange<float>(minObstaclePosition, maxObstaclePosition),
-										Random::RandomInRange<float>(minObstaclePosition, maxObstaclePosition)));
-
-		if (type == ShapeType::Box)
-		{
-			AddComponent<BoxCollider>(glm::vec2(Random::RandomInRange<float>(minObstacleSize, maxObstacleSize),
-												Random::RandomInRange<float>(minObstacleSize, maxObstacleSize)));
-		}
-		else if (type == ShapeType::Circle)
-		{
-			AddComponent<CircleCollider>(Random::RandomInRange<float>(minObstacleSize, maxObstacleSize));
-		}
-
-		bool positive = Random::RandomInRange<int>(0, 1);
-		std::shared_ptr<Rigidbody> newRB = AddComponent<Rigidbody>(obstacleMass, obstacleLinearDamping, obstacleRestitution);
-		newRB->SetLinearVelocity(glm::vec2(Random::RandomInRange<float>(minObstacleVelocity, maxObstacleVelocity),
-											Random::RandomInRange<float>(minObstacleVelocity, maxObstacleVelocity)));
-		if (!positive) newRB->GetLinearVelocity() *= -1;
-	}
+	void Setup(const ShapeType type);
 
 protected:
-	virtual void Update(float deltaTime) override
-	{
-		m_Colour = Colour::green;
-	}
+	virtual void Update(float deltaTime) override;
 
-	virtual void DrawDebug(const RendererDebug& rendererDebug) override
-	{
-		if (HasComponent<BoxCollider>())
-		{
-			const AABB boundingBox = GetComponent<BoxCollider>()->GetAABB();
-			rendererDebug.DrawRectangle(boundingBox.min, boundingBox.max, m_Colour);
-		}
-		else if (HasComponent<CircleCollider>())
-		{
-			rendererDebug.DrawCircle(GetComponent<Transform>()->GetPosition(), GetComponent<CircleCollider>()->GetRadius(), m_Colour);
-		}
-	}
+	virtual void DrawDebug(const RendererDebug& rendererDebug) override;
 
 private:
 	static constexpr float minObstaclePosition = 100.f;

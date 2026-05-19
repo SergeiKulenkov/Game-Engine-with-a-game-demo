@@ -46,6 +46,8 @@ private:
 
 	void Shutdown();
 
+	////////////////////
+
 	static constexpr ImVec4 clearColour = ImVec4(135 / 255.f, 138 / 255.f, 131 / 255.f, 1.00f);
 
 	bool m_Running = false;
@@ -56,5 +58,5 @@ private:
 
 	GLFWwindow* m_Window = nullptr;
 
-	std::shared_ptr<Scene> m_Scene = std::make_shared<Scene>();
+	std::shared_ptr<Scene> m_Scene = nullptr;
 };

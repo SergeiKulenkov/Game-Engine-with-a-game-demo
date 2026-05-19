@@ -4,12 +4,16 @@
 
 #include "Entity.h"
 #include "Physics.h"
-#include "../Utility/DebugWindow.h"
-#include "../Utility/Timer.h"
 #include "../Input/KeyCodes.h"
+#include "../Utility/Timer.h"
+#include "../Utility/DebugWindow.h"
 
 class Collider;
 class Rigidbody;
+class Engine;
+
+template<typename T>
+concept EntityType = std::is_base_of_v<Entity, T>;
 
 ////////////////////
 
@@ -52,24 +56,13 @@ struct RendererDebug
 class Scene : public std::enable_shared_from_this<Scene>
 {
 public:
-	Scene() {}
-	~Scene();
-
-	void Start(bool displayDebugWindow = false);
-
-	void Clear() { m_Entities.clear(); }
-
-	void Update(float deltaTime);
-
-	void Render();
+	virtual ~Scene();
 
 	// the returned pointer should be used to set up components
 	// to store the newly created Entity it should be converted to a weak_ptr
-	template<typename T>
+	template<EntityType T>
 	std::shared_ptr<Entity> CreateEntity()
 	{
-		static_assert(std::is_base_of_v<Entity, T>, "T must be of type Entity.");
-
 		const size_t id = m_Entities.size();
 		m_Entities.emplace(id, std::make_shared<T>());
 		m_Entities.at(id)->Init(id, shared_from_this());
@@ -81,25 +74,38 @@ public:
 	// because Scene owns entities, deleting them some other way won't work
 	void DestroyEntity(const size_t id);
 
-	size_t RegisterCollider(const std::shared_ptr<Collider>& collider) { return m_Physics.AddCollider(collider); }
-	size_t RegisterRigidbody(const std::shared_ptr<Rigidbody>& rigidbody) { return m_Physics.AddRigidbody(rigidbody); }
-
 	bool Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult) { return m_Physics.Raycast(ray, hitResult); }
 	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, const std::shared_ptr<RaycastHit>& hitResult) { return m_Physics.Raycast(origin, direction, length, hitResult); }
 
 	glm::vec2 GetScreenSize() const;
 
-	void SetDefaultScreenSize(const glm::vec2& size) { m_DefauleScreenSize = size; }
-
 	void RegisterEditableDebugWindowField(const std::string& name, float* value, float max = 10.f, float min = 0.f, const uint8_t numberOfFractionalDigits = 1);
 	void RegisterDebugWindowField(const std::string& name, float* value, const uint8_t numberOfFractionalDigits = 1);
+
+protected:
+	Scene() {}
+
+	void Start(bool displayDebugWindow = false);
+
+	void Clear() { m_Entities.clear(); }
+
+	void Update(float deltaTime);
+
+	void Render();
+
+	void SetDefaultScreenSize(const glm::vec2& size) { m_DefauleScreenSize = size; }
+
+	size_t RegisterCollider(const std::shared_ptr<Collider>& collider) { return m_Physics.AddCollider(collider); }
+	size_t RegisterRigidbody(const std::shared_ptr<Rigidbody>& rigidbody) { return m_Physics.AddRigidbody(rigidbody); }
 
 private:
 	static constexpr KeyCode debugKey = KeyCode::GraveAccent;
 
-	ImDrawList* m_DrawList = nullptr;
-
+	bool m_IsDebugPressed = false;
 	RendererDebug m_RendererDebug;
+	float m_FrameTime = 0.f;
+
+	ImDrawList* m_DrawList = nullptr;
 
 	Physics m_Physics;
 
@@ -111,7 +117,6 @@ private:
 
 	std::unordered_map<size_t, std::shared_ptr<Entity>> m_Entities;
 
-	bool m_IsDebugPressed = false;
-
-	float m_FrameTime = 0.f;
+	friend class Engine;
+	friend class Entity;
 };

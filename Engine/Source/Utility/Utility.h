@@ -6,10 +6,13 @@
 ////////////////////
 
 template<typename T>
-concept Integral = std::is_integral_v<T> && !std::is_same_v<T, bool>;
+concept IntegralType = std::is_integral_v<T> && !std::is_same_v<T, bool>;
 
 template<typename T>
-concept Floating = std::is_floating_point_v<T> && !std::is_same_v<T, bool>;
+concept FloatingType = std::is_floating_point_v<T> && !std::is_same_v<T, bool>;
+
+template<typename T>
+concept NumericType = IntegralType<T> || FloatingType<T>;
 
 ////////////////////
 
@@ -22,7 +25,7 @@ namespace Random
 		return (word >> 22u) ^ word;
 	}
 
-	template<Integral T>
+	template<IntegralType T>
 	inline T RandomInRange(const T min, const T max)
 	{
 		thread_local std::mt19937 generator(std::random_device{} ());
@@ -30,7 +33,7 @@ namespace Random
 		return distribution(generator);
 	}
 
-	template<Floating T>
+	template<FloatingType T>
 	inline T RandomInRange(const T min, const T max)
 	{
 		thread_local std::mt19937 generator(std::random_device{} ());

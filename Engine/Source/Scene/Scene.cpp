@@ -2,8 +2,10 @@
 #include <imgui_internal.h>
 
 #include "Component/Sprite.h"
-#include "../Input/InputManager.h"
 #include "Component/Collider.h"
+#include "Component/Rigidbody.h"
+
+#include "../Input/InputManager.h"
 
 ////////////////////
 

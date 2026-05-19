@@ -8,8 +8,10 @@
 
 #include "../Utility.h"
 
-constexpr uint16_t MAX_DEPTH = 8;
-constexpr uint16_t QUAD_COUNT = 4;
+////////////////////
+
+static constexpr uint16_t maxDepth = 8;
+static constexpr uint16_t quadCount = 4;
 
 ////////////////////
 
@@ -41,43 +43,44 @@ template<typename IteratorType>
 class Node
 {
 public:
-	Node(const Area& size, const uint16_t depth = 0) : m_Area(size), m_Depth(depth) {}
+	Node(const Area& size, const uint16_t depth = 0) : m_Area(size), m_Depth(depth)
+	{}
 
-	void clear()
+	void Clear()
 	{
 		m_Elements.clear();
 
-		for (int i = 0; i < QUAD_COUNT; i++)
+		for (int i = 0; i < quadCount; i++)
 		{
 			if (m_Children[i] != nullptr)
 			{
-				m_Children[i]->clear();
+				m_Children[i]->Clear();
 			}
 
 			m_Children[i].reset();
 		}
 	}
 
-	uint16_t size() const
+	uint16_t Size() const
 	{
 		uint16_t count = m_Elements.size();
 
-		for (int i = 0; i < QUAD_COUNT; i++)
+		for (int i = 0; i < quadCount; i++)
 		{
 			if (m_Children[i] != nullptr)
 			{
-				count += m_Children[i]->size();
+				count += m_Children[i]->Size();
 			}
 		}
 
 		return count;
 	}
 
-	void insert(const IteratorType element, const Area& size)
+	void Insert(const IteratorType element, const Area& size)
 	{
-		if (m_Depth + 1 < MAX_DEPTH)
+		if (m_Depth + 1 < maxDepth)
 		{
-			for (int i = 0; i < QUAD_COUNT; i++)
+			for (int i = 0; i < quadCount; i++)
 			{
 				Area childArea{ m_Area.Position, m_Area.Size / 2.0f };
 				if (i == 1) childArea.Position.x += childArea.Size.x;
@@ -91,7 +94,7 @@ public:
 							m_Children[i] = std::make_shared<Node<IteratorType>>(childArea, m_Depth + 1);
 						}
 
-						m_Children[i]->insert(element, size);
+						m_Children[i]->Insert(element, size);
 						return;
 				}
 			}
@@ -101,14 +104,14 @@ public:
 		m_Elements.push_back({ size, element });
 	}
 
-	std::list<IteratorType> search(const Area& area) const
+	std::list<IteratorType> Query(const Area& area) const
 	{
 		std::list<IteratorType> result;
-		search(area, result);
+		Query(area, result);
 		return result;
 	}
 
-	void search(const Area& area, std::list<IteratorType>& result) const
+	void Query(const Area& area, std::list<IteratorType>& result) const
 	{
 		for (const auto& [elementArea, iterator] : m_Elements)
 		{
@@ -118,7 +121,7 @@ public:
 			}
 		}
 
-		for (int i = 0; i < QUAD_COUNT; i++)
+		for (int i = 0; i < quadCount; i++)
 		{
 			if (m_Children[i] != nullptr)
 			{
@@ -129,36 +132,36 @@ public:
 
 				if (area.Contains(childArea))
 				{
-					m_Children[i]->elements(result);
+					m_Children[i]->GetElements(result);
 				}
 				else if (childArea.Overlaps(area))
 				{
-					m_Children[i]->search(area, result);
+					m_Children[i]->Query(area, result);
 				}
 			}
 		}
 	}
 
-	void elements(std::list<IteratorType>& result) const
+	void GetElements(std::list<IteratorType>& result) const
 	{
 		for (const auto& [elementArea, iterator] : m_Elements)
 		{
 			result.push_back(iterator);
 		}
 
-		for (int i = 0; i < QUAD_COUNT; i++)
+		for (int i = 0; i < quadCount; i++)
 		{
 			if (m_Children[i] != nullptr)
 			{
-				m_Children[i]->elements(result);
+				m_Children[i]->GetElements(result);
 			}
 		}
 	}
 
-	std::list<IteratorType> elements() const
+	std::list<IteratorType> GetElements() const
 	{
 		std::list<IteratorType> result;
-		elements(result);
+		GetElements(result);
 		return result;
 	}
 
@@ -171,7 +174,7 @@ private:
 	// somehow the frame time is the same when storing the children areas in every Node
 	//std::array<Area, QUAD_COUNT> m_ChildrenAreas{};
 
-	std::array<std::shared_ptr<Node<IteratorType>>, QUAD_COUNT> m_Children{};
+	std::array<std::shared_ptr<Node<IteratorType>>, quadCount> m_Children{};
 
 	std::vector<std::pair<Area, IteratorType>> m_Elements;
 };
@@ -179,33 +182,35 @@ private:
 ////////////////////
 
 // only store indexes from another container here because the tree is used for searching
-template<Integral IndexType>
+template<IntegralType IndexType>
 class QuadTree
 {
 	// list so the iterators inside Node will always be valid
+	// this statement is useful to use iterator type and to try other containers
 	using ContainerType = std::list<IndexType>;
+
 public:
 	QuadTree(const glm::vec2& position, const glm::vec2& size) : m_Root(Area(position, size)) {}
 
-	size_t size() const { return m_Elements.size(); }
+	size_t Size() const { return m_Elements.size(); }
 
-	void clear()
+	void Clear()
 	{
-		m_Root.clear();
+		m_Root.Clear();
 		m_Elements.clear();
 	}
 
-	void insert(const IndexType element, const Area& elementSize)
+	void Insert(const IndexType element, const Area& elementSize)
 	{
 		m_Elements.push_back(element);
-		m_Root.insert(std::prev(m_Elements.end()), elementSize);
+		m_Root.Insert(std::prev(m_Elements.end()), elementSize);
 	}
 
 	// returns a list of iterators (pointing to indexes) to the elements of this structure
-	std::list<typename ContainerType::iterator> search(const Area& area) const
+	std::list<typename ContainerType::iterator> Query(const Area& area) const
 	{
 		std::list<typename ContainerType::iterator> result;
-		m_Root.search(area, result);
+		m_Root.Query(area, result);
 		return result;
 	}
 

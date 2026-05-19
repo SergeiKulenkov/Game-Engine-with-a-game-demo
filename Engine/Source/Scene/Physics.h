@@ -6,12 +6,12 @@
 #include <glm/glm.hpp>
 
 #include "Component/Collider.h"
-#include "Component/Rigidbody.h"
-#include "../Utility/DataStructures/Quadtree.h"
-#include "../Utility/DataStructures/SpatialHashGrid.h"
+#include "../Utility/DataStructures/QuadTree.h"
 
 class Scene;
 class Entity;
+class SpatialHashGrid;
+class Rigidbody;
 
 ////////////////////
 
@@ -44,12 +44,6 @@ struct RaycastHit
 class Physics
 {
 public:
-	size_t AddCollider(const std::weak_ptr<Collider>& collider);
-	void RemoveCollider(const size_t id);
-
-	size_t AddRigidbody(const std::weak_ptr<Rigidbody>& rigidbody);
-	void RemoveRigidbody(const size_t id);
-
 	bool Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult);
 	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, const std::shared_ptr<RaycastHit>& hitResult) { return Raycast(Ray(origin, direction, length), hitResult); }
 
@@ -58,8 +52,13 @@ private:
 	~Physics() {}
 
 	void Start(const glm::vec2& screenSize);
-
 	void Update(float deltaTime);
+
+	size_t AddCollider(const std::weak_ptr<Collider>& collider);
+	void RemoveCollider(const size_t id);
+
+	size_t AddRigidbody(const std::weak_ptr<Rigidbody>& rigidbody);
+	void RemoveRigidbody(const size_t id);
 
 	void SpatialHashGridCollisions();
 	// using a static quad tree (it's rebuilt every frame)
@@ -99,8 +98,8 @@ private:
 	std::vector<std::weak_ptr<Rigidbody>> m_Rigidbodies;
 	
 	QuadTree<size_t> m_QuadTree = QuadTree<size_t>(glm::vec2(0.f, 0.f), glm::vec2(1920.f, 1080.f));
-	SpatialHashGrid m_SpatialHashGrid = SpatialHashGrid(glm::vec2(1920, 1080));
-	std::unordered_set<size_t> m_QueryResults;
+	//SpatialHashGrid m_SpatialHashGrid = SpatialHashGrid(glm::vec2(1920, 1080));
+	//std::unordered_set<size_t> m_QueryResults;
 
 	friend class Scene;
 };

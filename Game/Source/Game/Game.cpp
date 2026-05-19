@@ -7,12 +7,10 @@
 static Game* s_Instance = nullptr;
 
 Game::Game()
-{
-}
+{}
 
 Game::~Game()
-{
-}
+{}
 
 void Game::Init()
 {
@@ -30,6 +28,11 @@ Game& Game::Get()
 {
 	assert(s_Instance);
 	return *s_Instance;
+}
+
+std::shared_ptr<Scene> Game::GetScene()
+{
+	return std::dynamic_pointer_cast<Scene>(m_Scene);
 }
 
 void Game::Start()
