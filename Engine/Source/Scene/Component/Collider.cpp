@@ -23,6 +23,13 @@ void Collider::OnInit()
 	}
 }
 
+void Collider::OnRemove()
+{
+	const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
+	ASSERT_ENTITY_SHARED_PTR(sharedEntity);
+	sharedEntity->UnregisterCollider(m_Id);
+}
+
 void Collider::SetDynamic(bool isDynamic, size_t rigidbodyId)
 {
 	m_IsDynamic = isDynamic;

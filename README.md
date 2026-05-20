@@ -6,10 +6,11 @@
 * Update loop with deltaTime
 * Input Manager class
 * Image class for rendering image files through ImGUI and vulkan
-* optional rendering of debug visuals for entities
+* Optional rendering of debug visuals for entities
 * Physics class for collision and raycast processing
-* dynamic—movable, resizable, can be hidden by pressing tilde—Debug window with an ability to register new displayble fields
-* And Game demo with a simple environment full of random obstacles and a movable Player object—entity with a few components
+* Data structures—quad tree, spatial hash grid—for physics and other algorithms
+* Dynamic—movable, resizable, can be hidden by pressing tilde—Debug window with an ability to register new displayble fields
+* And Game demo with a simple environment with random obstacles and a movable Player object—entity with a few components
 * game window's title and size are set in the main() function located in main.cpp
 
 ### Collisions demo

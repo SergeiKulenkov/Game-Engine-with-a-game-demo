@@ -76,7 +76,9 @@ protected:
 	{}
 
 	virtual ~Collider() {}
+
 	virtual void OnInit() override;
+	virtual void OnRemove() override;
 
 	void SetDynamic(bool isDynamic, size_t rigidbodyId);
 

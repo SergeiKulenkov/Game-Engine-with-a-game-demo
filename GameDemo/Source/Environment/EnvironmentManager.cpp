@@ -17,18 +17,18 @@ void EnvironmentManager::OnInit()
 	std::shared_ptr<Entity> newEntity;
 	for (size_t i = 0; i < m_Boundaries.size(); i++)
 	{
-		newEntity = sharedScene->CreateEntity<Entity>();
-		//newEntity->AddComponent<Transform>(boundaryPositions[i] * screenSize);
-		//if (i % 2 == 0)
-		//{
-		//	newEntity->AddComponent<BoxCollider>(glm::vec2(screenSize.x, boundaryThickness));
-		//}
-		//else
-		//{
-		//	newEntity->AddComponent<BoxCollider>(glm::vec2(boundaryThickness, screenSize.y));
-		//}
+		newEntity = sharedScene->CreateEntity<Wall>();
+		const std::shared_ptr<Wall> newWall = std::dynamic_pointer_cast<Wall>(newEntity);
 
-		m_Boundaries[i] = newEntity;
+		if (newWall != nullptr)
+		{
+			glm::vec2 size = glm::vec2(0.f, 0.f);
+			if (i % 2 == 0) size.x = screenSize.x;
+			else size.y = screenSize.y;
+
+			newWall->Setup(boundaryPositions[i] * screenSize, size);
+			m_Boundaries[i] = newWall;
+		}
 	}
 
 	for (size_t i = 0; i < m_Obstacles.size(); i++)
@@ -38,8 +38,8 @@ void EnvironmentManager::OnInit()
 
 		if (newObstacle != nullptr)
 		{
-			if (i % 2 == 0) newObstacle->Setup(ShapeType::Box);
-			else newObstacle->Setup(ShapeType::Circle);
+			if (i % 2 == 0) newObstacle->Setup(ShapeType::Box, screenSize);
+			else newObstacle->Setup(ShapeType::Circle, screenSize);
 			m_Obstacles[i] = newObstacle;
 		}
 	}

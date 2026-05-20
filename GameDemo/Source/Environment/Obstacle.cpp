@@ -5,31 +5,27 @@
 
 ////////////////////
 
-void Obstacle::Setup(const ShapeType type)
+void Obstacle::Setup(const ShapeType type, const glm::vec2& screenSize)
 {
-	AddComponent<Transform>(glm::vec2(Random::RandomInRange<float>(minObstaclePosition, maxObstaclePosition),
-		Random::RandomInRange<float>(minObstaclePosition, maxObstaclePosition)));
+	AddComponent<Transform>(glm::vec2(Random::RandomInRange<float>(screenOffset, screenSize.x - screenOffset),
+									Random::RandomInRange<float>(screenOffset, screenSize.y - screenOffset)));
 
 	if (type == ShapeType::Box)
 	{
-		AddComponent<BoxCollider>(glm::vec2(Random::RandomInRange<float>(minObstacleSize, maxObstacleSize),
-			Random::RandomInRange<float>(minObstacleSize, maxObstacleSize)));
+		AddComponent<BoxCollider>(glm::vec2(Random::RandomInRange<float>(minSize, maxSize),
+											Random::RandomInRange<float>(minSize, maxSize)));
 	}
 	else if (type == ShapeType::Circle)
 	{
-		AddComponent<CircleCollider>(Random::RandomInRange<float>(minObstacleSize, maxObstacleSize));
+		AddComponent<CircleCollider>(Random::RandomInRange<float>(minSize, maxSize));
 	}
 
-	bool positive = Random::RandomInRange<int>(0, 1);
-	std::shared_ptr<Rigidbody> newRB = AddComponent<Rigidbody>(obstacleMass, obstacleLinearDamping, obstacleRestitution);
-	newRB->SetLinearVelocity(glm::vec2(Random::RandomInRange<float>(minObstacleVelocity, maxObstacleVelocity),
-		Random::RandomInRange<float>(minObstacleVelocity, maxObstacleVelocity)));
-	if (!positive) newRB->GetLinearVelocity() *= -1;
-}
+	std::shared_ptr<Rigidbody> rigidbody = AddComponent<Rigidbody>(mass, linearDamping, restitution);
+	rigidbody->SetLinearVelocity(glm::vec2(Random::RandomInRange<float>(minVelocity, maxVelocity),
+										Random::RandomInRange<float>(minVelocity, maxVelocity)));
 
-void Obstacle::Update(float deltaTime)
-{
-	m_Colour = Colour::green;
+	bool positive = Random::RandomInRange<int>(0, 1);
+	if (!positive) rigidbody->GetLinearVelocity() *= -1;
 }
 
 void Obstacle::DrawDebug(const RendererDebug& rendererDebug)

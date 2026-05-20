@@ -66,8 +66,9 @@ void Rigidbody::OnRemove()
 {
 	const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
 	ASSERT_ENTITY_SHARED_PTR(sharedEntity);
+	sharedEntity->UnregisterRigidbody(m_Id);
 
-	// set collider to dynamic
+	// set collider to static
 	if (sharedEntity->HasComponent<BoxCollider>())
 	{
 		sharedEntity->GetComponent<BoxCollider>()->SetDynamic(false, 0);

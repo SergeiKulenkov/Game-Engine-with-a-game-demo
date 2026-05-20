@@ -74,6 +74,9 @@ protected:
 	// similar to Start in Unity or BeginPlay in UE
 	virtual void OnInit() {}
 
+	// called when using Scene::DestroyEntity to delete the components
+	virtual void OnDestroy();
+
 	virtual void Update(float deltaTime) {}
 
 	virtual void OnCollision(const std::shared_ptr<Collision>& other) {}
@@ -83,7 +86,10 @@ protected:
 	virtual void DrawDebug(const RendererDebug& rendererDebug) {}
 
 	size_t RegisterCollider(const size_t colliderType);
+	void UnregisterCollider(const size_t id);
+
 	size_t RegisterRigidbody();
+	void UnregisterRigidbody(const size_t id);
 
 	////////////////////
 
