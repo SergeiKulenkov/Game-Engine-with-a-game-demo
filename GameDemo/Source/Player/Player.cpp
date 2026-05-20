@@ -1,15 +1,15 @@
 #include "Player.h"
 
 #include <Input/InputManager.h>
+#include <Scene/Scene.h>
+#include <Scene/Physics.h>
 #include <Scene/Component/Transform.h>
 #include <Scene/Component/Tag.h>
 #include <Scene/Component/Sprite.h>
 #include <Scene/Component/Collider.h>
 #include <Scene/Component/Rigidbody.h>
+#include <Utility/Utility.h>
 
-#include "Scene/Scene.h"
-#include "Scene/Physics.h"
-#include "Utility/Utility.h"
 #include "../Environment/Obstacle.h"
 
 ////////////////////
@@ -65,6 +65,9 @@ void Player::OnCollision(const std::shared_ptr<Collision>& other)
 	//const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
 	//ASSERT_SCENE_SHARED_PTR(sharedScene);
 	//sharedScene->DestroyEntity(other->entity.lock()->GetId());
+
+	// here can also access the entity inside Collision and call its functions
+	// for example it can be an Obstacle, so can call ChangeColour
 }
 
 glm::vec2 Player::GetMovementInput() const
@@ -84,6 +87,16 @@ glm::vec2 Player::GetMovementInput() const
 
 void Player::DrawDebug(const RendererDebug& rendererDebug)
 {
+	// draw box collider
+	//AABB boundingBox = GetComponent<BoxCollider>()->GetAABB();
+	//rendererDebug.DrawRectangle(boundingBox.min, boundingBox.max, Colour::green);
+
+	// draw circle collider
+	rendererDebug.DrawCircle(m_Transform->position, GetComponent<CircleCollider>()->GetRadius(), Colour::green);
+
+	// draw player's direction
+	//rendererDebug.DrawLine(m_Transform->position, m_Transform->position + m_Transform->rotation * 30.f, Colour::green);
+	
 	// testing raycast
 	//std::shared_ptr<RaycastHit> hitResult = std::make_shared<RaycastHit>();
 	//const glm::vec2 origin = m_Transform->position + m_Transform->rotation * 20.f;
@@ -102,17 +115,4 @@ void Player::DrawDebug(const RendererDebug& rendererDebug)
 	//		rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);
 	//	}
 	//}
-
-	// draw box collider
-	//AABB boundingBox = GetComponent<BoxCollider>()->GetAABB();
-	//for (size_t i = 0; i < vertices.size(); i++)
-	//{
-		//rendererDebug.DrawRectangle(boundingBox.min, boundingBox.max, Colour::green);
-	//}
-
-	// draw circle collider
-	rendererDebug.DrawCircle(m_Transform->position, GetComponent<CircleCollider>()->GetRadius(), Colour::green);
-
-	// draw player's direction
-	//rendererDebug.DrawLine(m_Transform->position, m_Transform->position + m_Transform->rotation * 30.f, Colour::green);
 }

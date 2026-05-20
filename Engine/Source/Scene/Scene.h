@@ -96,7 +96,10 @@ protected:
 	void SetDefaultScreenSize(const glm::vec2& size) { m_DefauleScreenSize = size; }
 
 	size_t RegisterCollider(const std::shared_ptr<Collider>& collider) { return m_Physics.AddCollider(collider); }
+	void UnRegisterCollider(const size_t id) { m_Physics.RemoveCollider(id); }
+
 	size_t RegisterRigidbody(const std::shared_ptr<Rigidbody>& rigidbody) { return m_Physics.AddRigidbody(rigidbody); }
+	void UnRegisterRigidbody(const size_t id) { m_Physics.RemoveRigidbody(id); }
 
 private:
 	static constexpr KeyCode debugKey = KeyCode::GraveAccent;

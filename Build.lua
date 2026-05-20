@@ -1,4 +1,4 @@
-workspace "Game and Engine Template"
+workspace "Engine and Game Demo"
    architecture "x64"
    configurations { "Debug", "Release", "Dist" }
    startproject "Game"
@@ -19,4 +19,4 @@ Library = {}
 Library["Vulkan"] = "%{LibraryDir.VulkanSDK}/vulkan-1.lib"
 
 include "Engine/Build-Engine.lua"
-include "Game/Build-Game.lua"
+include "GameDemo/Build-Game.lua"
