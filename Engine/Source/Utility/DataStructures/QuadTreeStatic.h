@@ -183,14 +183,14 @@ private:
 
 // only store indexes from another container here because the tree is used for searching
 template<IntegralType IndexType>
-class QuadTree
+class QuadTreeStatic
 {
 	// list so the iterators inside Node will always be valid
 	// this statement is useful to use iterator type and to try other containers
 	using ContainerType = std::list<IndexType>;
 
 public:
-	QuadTree(const glm::vec2& position, const glm::vec2& size) : m_Root(Area(position, size)) {}
+	QuadTreeStatic(const glm::vec2& position, const glm::vec2& size) : m_Root(Area(position, size)) {}
 
 	size_t Size() const { return m_Elements.size(); }
 

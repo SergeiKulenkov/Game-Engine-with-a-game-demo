@@ -1,5 +1,6 @@
 #include "Obstacle.h"
 
+#include <Scene/Component/Sprite.h>
 #include <Scene/Component/Rigidbody.h>
 #include <Utility/Utility.h>
 
@@ -9,6 +10,7 @@ void Obstacle::Setup(const ShapeType type, const glm::vec2& screenSize)
 {
 	AddComponent<Transform>(glm::vec2(Random::RandomInRange<float>(screenOffset, screenSize.x - screenOffset),
 									Random::RandomInRange<float>(screenOffset, screenSize.y - screenOffset)));
+	AddComponent<Sprite>(spritePath);
 
 	if (type == ShapeType::Box)
 	{
@@ -17,7 +19,7 @@ void Obstacle::Setup(const ShapeType type, const glm::vec2& screenSize)
 	}
 	else if (type == ShapeType::Circle)
 	{
-		AddComponent<CircleCollider>(Random::RandomInRange<float>(minSize, maxSize));
+		AddComponent<CircleCollider>(Random::RandomInRange<float>(minSize / 2.f, maxSize / 2.f));
 	}
 
 	std::shared_ptr<Rigidbody> rigidbody = AddComponent<Rigidbody>(mass, linearDamping, restitution);

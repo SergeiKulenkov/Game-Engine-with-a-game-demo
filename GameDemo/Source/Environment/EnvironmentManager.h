@@ -28,6 +28,7 @@ private:
 	static constexpr uint8_t numberOfInitialObstacles = 200;
 	// values are multiplied by screen size
 	static constexpr std::array<glm::vec2, numberOfInitialBoundaries> boundaryPositions = { glm::vec2(0.5f, 0), glm::vec2(1, 0.5f), glm::vec2(0.5f, 1), glm::vec2(0, 0.5f) };
+	static constexpr float boundaryScreenOffset = 5.f;
 
 	std::vector<std::weak_ptr<Wall>> m_Boundaries;
 	std::vector<std::weak_ptr<Obstacle>> m_Obstacles;

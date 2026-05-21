@@ -4,12 +4,12 @@
 
 ////////////////////
 
-void Wall::Setup(const glm::vec2& position, glm::vec2& size)
+void Wall::Setup(glm::vec2 position, glm::vec2 size)
 {
 	AddComponent<Transform>(position);
 
-	if (size.x == 0) size.x = boundaryThickness;
-	else size.y = boundaryThickness;
+	if (size.x == 0) size.x = thickness;
+	else size.y = thickness;
 	AddComponent<BoxCollider>(size);
 }
 

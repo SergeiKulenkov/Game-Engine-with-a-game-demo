@@ -6,11 +6,11 @@
 #include <glm/glm.hpp>
 
 #include "Component/Collider.h"
-#include "../Utility/DataStructures/QuadTree.h"
+#include "../Utility/DataStructures/QuadTreeStatic.h"
+#include "../Utility/DataStructures/SpatialHashGrid.h"
 
 class Scene;
 class Entity;
-class SpatialHashGrid;
 class Rigidbody;
 
 ////////////////////
@@ -97,7 +97,7 @@ private:
 	std::vector<std::weak_ptr<Collider>> m_Colliders;
 	std::vector<std::weak_ptr<Rigidbody>> m_Rigidbodies;
 	
-	QuadTree<size_t> m_QuadTree = QuadTree<size_t>(glm::vec2(0.f, 0.f), glm::vec2(1920.f, 1080.f));
+	QuadTreeStatic<size_t> m_QuadTree = QuadTreeStatic<size_t>(glm::vec2(0.f, 0.f), glm::vec2(1920.f, 1080.f));
 	//SpatialHashGrid m_SpatialHashGrid = SpatialHashGrid(glm::vec2(1920, 1080));
 	//std::unordered_set<size_t> m_QueryResults;
 

@@ -34,11 +34,15 @@ private:
 	static constexpr std::string_view defaultTag = "Player";
 	static constexpr std::string_view spritePath = "../Assets/bee.png";
 	static constexpr glm::vec2 defaultPosition = glm::vec2(500.f, 300.f);
+	static constexpr float colliderSize = 14.f;
 
 	static constexpr float acceleration = 2.75f;
 	static constexpr float deceleration = 2.15f;
 	static constexpr float linearDamping = 0.25f;
-	static constexpr float defaultMaxSpeed = 150.5f;
+	static constexpr float restitution = 0.5f;
+
+	static constexpr float defaultSpeedLimit = 150.f;
+	static constexpr float maxSpeedLimit = 200.f;
 	static constexpr float rotationRate = 3.5f;
 
 	////////////////////
@@ -48,5 +52,5 @@ private:
 	std::shared_ptr<Rigidbody> m_Rigidbody;
 
 	float m_Speed = 0.f;
-	float m_MaxSpeed = defaultMaxSpeed;
+	float m_MaxSpeed = defaultSpeedLimit;
 };
