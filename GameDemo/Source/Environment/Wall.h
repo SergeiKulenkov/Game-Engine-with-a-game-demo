@@ -13,8 +13,8 @@ public:
 
 	void ChangeColour(const uint32_t colour) { m_Colour = colour; }
 
-	// size needs to be updated with the thickness value
-	void Setup(const glm::vec2& position, glm::vec2& size);
+	// parameters need to be adjusted with the config values
+	void Setup(glm::vec2 position, glm::vec2 size);
 
 protected:
 	virtual void Update(float deltaTime) override {}
@@ -22,7 +22,7 @@ protected:
 	virtual void DrawDebug(const RendererDebug& rendererDebug) override;
 
 private:
-	static constexpr float boundaryThickness = 16.f;
+	static constexpr float thickness = 5.f;
 
 	uint32_t m_Colour = Colour::green;
 };

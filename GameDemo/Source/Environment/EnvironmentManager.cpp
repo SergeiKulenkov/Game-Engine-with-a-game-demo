@@ -15,6 +15,8 @@ void EnvironmentManager::OnInit()
 	const glm::vec2 screenSize = sharedScene->GetScreenSize();
 
 	std::shared_ptr<Entity> newEntity;
+	glm::vec2 position = glm::vec2(0.f, 0.f);
+
 	for (size_t i = 0; i < m_Boundaries.size(); i++)
 	{
 		newEntity = sharedScene->CreateEntity<Wall>();
@@ -26,7 +28,13 @@ void EnvironmentManager::OnInit()
 			if (i % 2 == 0) size.x = screenSize.x;
 			else size.y = screenSize.y;
 
-			newWall->Setup(boundaryPositions[i] * screenSize, size);
+			position = boundaryPositions[i] * screenSize;
+			if (boundaryPositions[i].x == 0) position.x += boundaryScreenOffset;
+			else if (boundaryPositions[i].x == 1) position.x -= boundaryScreenOffset;
+			if (boundaryPositions[i].y == 0) position.y += boundaryScreenOffset;
+			else if (boundaryPositions[i].y == 1) position.y -= boundaryScreenOffset;
+
+			newWall->Setup(position, size);
 			m_Boundaries[i] = newWall;
 		}
 	}

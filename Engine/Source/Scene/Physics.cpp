@@ -6,7 +6,6 @@
 
 #include "../Utility/Utility.h"
 #include "../Utility/Timer.h"
-#include "../Utility/DataStructures/SpatialHashGrid.h"
 
 #define ASSERT_COLLIDER_SHARED_PTR(collider) assert(collider && "Can't get Collider's shared pointer because it's no longer valid.");
 #define ASSERT_RIGIDBODY_SHARED_PTR(rigidbody) assert(rigidbody && "Can't get Rigidbody's shared pointer because it's no longer valid.");
@@ -15,7 +14,7 @@
 
 void Physics::Start(const glm::vec2& screenSize)
 {
-	m_QuadTree = QuadTree<size_t>(glm::vec2(0.f, 0.f), screenSize);
+	m_QuadTree = QuadTreeStatic<size_t>(glm::vec2(0.f, 0.f), screenSize);
 	//m_SpatialHashGrid = SpatialHashGrid(screenSize);
 }
 
@@ -29,6 +28,7 @@ void Physics::Update(float deltaTime)
 		ASSERT_COLLIDER_SHARED_PTR(sharedCollider);
 		// don't need to update static objects
 		//if (!sharedCollider->IsEnabled() || !sharedCollider->IsDynamic()) continue;
+		if (!sharedCollider->IsEnabled()) continue;
 
 		// TODO: remove after implementing dynamic quad tree, for now it needs to add static objects
 		if (sharedCollider->IsDynamic())

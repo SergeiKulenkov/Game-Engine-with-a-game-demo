@@ -2,7 +2,6 @@
 #include <unordered_set>
 #include <vector>
 #include <array>
-#include <algorithm>
 #include <assert.h>
 
 #include <glm/glm.hpp>
@@ -20,15 +19,6 @@ struct Cell
 	uint16_t y = 0;
 };
 
-template<>
-struct std::hash<Cell>
-{
-	size_t operator()(const Cell& cell) const
-	{
-		return (std::hash<uint16_t>()(cell.x)) ^ (std::hash<uint16_t>()(cell.y));
-	}
-};
-
 ////////////////////
 
 struct CellElement
@@ -39,12 +29,6 @@ struct CellElement
 	size_t id;
 
 	std::array<Cell, 2> cellsRange = { Cell(), Cell() };
-};
-
-template<>
-struct std::hash<CellElement>
-{
-	size_t operator()(const CellElement& element) const { return element.id; }
 };
 
 ////////////////////
@@ -78,15 +62,19 @@ public:
 	{
 		const Cell cellA = GetCell(boundingBox.min);
 		const Cell cellB = GetCell(boundingBox.max);
+		Insert(cellA, cellB, Id);
+	}
 
+	void Insert(const Cell cellA, const Cell cellB, const size_t Id)
+	{
 		CellElement element(Id);
-		element.cellsRange = {cellA, cellB};
+		element.cellsRange = { cellA, cellB };
 
 		uint16_t rowIndex = 0;
-		for (uint16_t row = cellA.x; row <= cellB.x; row++)
+		for (uint16_t row = cellA.y; row <= cellB.y; row++)
 		{
 			rowIndex = row * m_GridSizeX;
-			for (uint16_t column = cellA.y; column <= cellB.y; column++)
+			for (uint16_t column = cellA.x; column <= cellB.x; column++)
 			{
 				ASSERT_GRID_INDEX(rowIndex + column, m_Grid.size());
 				m_Grid[rowIndex + column].emplace_back(element);
@@ -109,10 +97,10 @@ public:
 		const Cell cellB = GetCell(boundingBox.max);
 
 		uint16_t rowIndex = 0;
-		for (uint16_t row = cellA.x; row <= cellB.x; row++)
+		for (uint16_t row = cellA.y; row <= cellB.y; row++)
 		{
 			rowIndex = row * m_GridSizeX;
-			for (uint16_t column = cellA.y; column <= cellB.y; column++)
+			for (uint16_t column = cellA.x; column <= cellB.x; column++)
 			{
 				ASSERT_GRID_INDEX(rowIndex + column, m_Grid.size());
 				for (const CellElement& cellElement : m_Grid[rowIndex + column])
@@ -132,14 +120,14 @@ public:
 		const Cell cellB = GetCell(boundingBox.max);
 
 		uint16_t rowIndex = 0;
-		for (uint16_t row = cellA.x; row <= cellB.x; row++)
+		for (uint16_t row = cellA.y; row <= cellB.y; row++)
 		{
 			rowIndex = row * m_GridSizeX;
-			for (uint16_t column = cellA.y; column <= cellB.y; column++)
+			for (uint16_t column = cellA.x; column <= cellB.x; column++)
 			{
 				ASSERT_GRID_INDEX(rowIndex + column, m_Grid.size());
 				const std::vector<CellElement>& vector = m_Grid[rowIndex + column];
-				auto elementPosition = std::find_if(vector.begin(), vector.end(), [Id](const CellElement& element) { return element.id == Id; });
+				auto elementPosition = std::find(vector.begin(), vector.end(), CellElement(Id));
 
 				if (elementPosition != vector.end())
 				{
@@ -153,8 +141,8 @@ public:
 
 		if (!sameCells)
 		{
-			Remove(boundingBox, Id);
-			Insert(boundingBox, Id);
+			Remove(cellA, cellB, Id);
+			Insert(cellA, cellB, Id);
 		}
 	}
 
@@ -162,16 +150,20 @@ public:
 	{
 		const Cell cellA = GetCell(boundingBox.min);
 		const Cell cellB = GetCell(boundingBox.max);
+		Remove(cellA, cellB, Id);
+	}
 
+	void Remove(const Cell cellA, const Cell cellB, const size_t Id)
+	{
 		uint16_t rowIndex = 0;
-		for (uint16_t row = cellA.x; row <= cellB.x; row++)
+		for (uint16_t row = cellA.y; row <= cellB.y; row++)
 		{
 			rowIndex = row * m_GridSizeX;
-			for (uint16_t column = cellA.y; column <= cellB.y; column++)
+			for (uint16_t column = cellA.x; column <= cellB.x; column++)
 			{
 				ASSERT_GRID_INDEX(rowIndex + column, m_Grid.size());
 				std::vector<CellElement>& vector = m_Grid[rowIndex + column];
-				auto elementPosition = std::find_if(vector.begin(), vector.end(), [Id](CellElement& element) { return element.id == Id; });
+				auto elementPosition = std::find(vector.begin(), vector.end(), CellElement(Id));
 
 				if (elementPosition != vector.end())
 				{
@@ -185,8 +177,13 @@ public:
 private:
 	Cell GetCell(const glm::vec2& position) const
 	{
-		const uint16_t x = static_cast<uint16_t>(std::floor(position.x / m_CellSize));
-		const uint16_t y = static_cast<uint16_t>(std::floor(position.y / m_CellSize));
+		uint16_t x = static_cast<uint16_t>(std::floor(position.x / m_CellSize));
+		// allowing the maximum edges of the grid
+		if (x == m_GridSizeX) x--;
+
+		uint16_t y = static_cast<uint16_t>(std::floor(position.y / m_CellSize));
+		if (y == m_GridSizeY) y--;
+
 		return Cell(x, y);
 	}
 

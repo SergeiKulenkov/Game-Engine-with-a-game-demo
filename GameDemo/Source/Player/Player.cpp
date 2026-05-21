@@ -10,8 +10,6 @@
 #include <Scene/Component/Rigidbody.h>
 #include <Utility/Utility.h>
 
-#include "../Environment/Obstacle.h"
-
 ////////////////////
 
 void Player::OnInit()
@@ -20,12 +18,12 @@ void Player::OnInit()
 	AddComponent<Tag>(defaultTag.data());
 	AddComponent<Sprite>(spritePath);
 	
-	AddComponent<CircleCollider>(14.f);
-	m_Rigidbody = AddComponent<Rigidbody>(1.f, linearDamping, 0.5f);
+	AddComponent<CircleCollider>(colliderSize);
+	m_Rigidbody = AddComponent<Rigidbody>(1.f, linearDamping, restitution);
 
 	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
 	ASSERT_SCENE_SHARED_PTR(sharedScene);
-	sharedScene->RegisterEditableDebugWindowField("Player's Max Speed", &m_MaxSpeed, 200.f, 0.f, 2);
+	sharedScene->RegisterEditableDebugWindowField("Player's Max Speed", &m_MaxSpeed, maxSpeedLimit, 0.f, 2);
 	sharedScene->RegisterDebugWindowField("Player's Current Speed", &m_Speed, 2);
 }
 
