@@ -89,6 +89,8 @@ protected:
 
 	void Clear() { m_Entities.clear(); }
 
+	void SetFrameTime(const float frameTime) { m_FrameTime = frameTime; }
+
 	void Update(float deltaTime);
 
 	void Render();

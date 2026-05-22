@@ -12,6 +12,7 @@
 
 static constexpr uint16_t maxDepth = 8;
 static constexpr uint16_t quadCount = 4;
+static constexpr uint16_t defaultElementCount = 10;
 
 ////////////////////
 
@@ -43,14 +44,16 @@ template<typename IteratorType>
 class Node
 {
 public:
-	Node(const Area& size, const uint16_t depth = 0) : m_Area(size), m_Depth(depth)
-	{}
+	Node(const Area& area, const uint16_t depth = 0) : m_Area(area), m_Depth(depth)
+	{
+		m_Elements.reserve(defaultElementCount);
+	}
 
 	void Clear()
 	{
 		m_Elements.clear();
 
-		for (int i = 0; i < quadCount; i++)
+		for (uint16_t i = 0; i < quadCount; i++)
 		{
 			if (m_Children[i] != nullptr)
 			{
@@ -61,54 +64,30 @@ public:
 		}
 	}
 
-	uint16_t Size() const
+	void Insert(const IteratorType element, const Area& area)
 	{
-		uint16_t count = m_Elements.size();
-
-		for (int i = 0; i < quadCount; i++)
-		{
-			if (m_Children[i] != nullptr)
-			{
-				count += m_Children[i]->Size();
-			}
-		}
-
-		return count;
-	}
-
-	void Insert(const IteratorType element, const Area& size)
-	{
+		bool inserted = false;
 		if (m_Depth + 1 < maxDepth)
 		{
-			for (int i = 0; i < quadCount; i++)
+			for (uint16_t i = 0; i < quadCount; i++)
 			{
-				Area childArea{ m_Area.Position, m_Area.Size / 2.0f };
-				if (i == 1) childArea.Position.x += childArea.Size.x;
-				if (i == 2) childArea.Position.y += childArea.Size.y;
-				if (i == 3) childArea.Position += childArea.Size;
-
-				if (childArea.Contains(size))
+				const Area childArea = GetChildArea(i);
+				if (childArea.Contains(area))
 				{
-						if (m_Children[i] == nullptr)
-						{
-							m_Children[i] = std::make_shared<Node<IteratorType>>(childArea, m_Depth + 1);
-						}
+					if (m_Children[i] == nullptr)
+					{
+						m_Children[i] = std::make_shared<Node<IteratorType>>(childArea, m_Depth + 1);
+					}
 
-						m_Children[i]->Insert(element, size);
-						return;
+					m_Children[i]->Insert(element, area);
+					inserted = true;
+					break;
 				}
 			}
 		}
 
 		// new element doesn't fit in any of the children
-		m_Elements.push_back({ size, element });
-	}
-
-	std::list<IteratorType> Query(const Area& area) const
-	{
-		std::list<IteratorType> result;
-		Query(area, result);
-		return result;
+		if (!inserted) m_Elements.push_back({ area, element });
 	}
 
 	void Query(const Area& area, std::list<IteratorType>& result) const
@@ -121,15 +100,11 @@ public:
 			}
 		}
 
-		for (int i = 0; i < quadCount; i++)
+		for (uint16_t i = 0; i < quadCount; i++)
 		{
 			if (m_Children[i] != nullptr)
 			{
-				Area childArea{ m_Area.Position, m_Area.Size / 2.0f };
-				if (i == 1) childArea.Position.x += childArea.Size.x;
-				if (i == 2) childArea.Position.y += childArea.Size.y;
-				if (i == 3) childArea.Position += childArea.Size;
-
+				const Area childArea = GetChildArea(i);
 				if (area.Contains(childArea))
 				{
 					m_Children[i]->GetElements(result);
@@ -142,6 +117,22 @@ public:
 		}
 	}
 
+private:
+	uint16_t Size() const
+	{
+		uint16_t count = m_Elements.area();
+
+		for (uint16_t i = 0; i < quadCount; i++)
+		{
+			if (m_Children[i] != nullptr)
+			{
+				count += m_Children[i]->Size();
+			}
+		}
+
+		return count;
+	}
+
 	void GetElements(std::list<IteratorType>& result) const
 	{
 		for (const auto& [elementArea, iterator] : m_Elements)
@@ -149,7 +140,7 @@ public:
 			result.push_back(iterator);
 		}
 
-		for (int i = 0; i < quadCount; i++)
+		for (uint16_t i = 0; i < quadCount; i++)
 		{
 			if (m_Children[i] != nullptr)
 			{
@@ -158,14 +149,17 @@ public:
 		}
 	}
 
-	std::list<IteratorType> GetElements() const
+	Area GetChildArea(const uint16_t index) const
 	{
-		std::list<IteratorType> result;
-		GetElements(result);
-		return result;
+		Area childArea{ m_Area.Position, m_Area.Size / 2.0f };
+		if (index == 1) childArea.Position.x += childArea.Size.x;
+		if (index == 2) childArea.Position.y += childArea.Size.y;
+		if (index == 3) childArea.Position += childArea.Size;
+		return childArea;
 	}
 
-private:
+	////////////////////
+
 	// depth of this Node
 	uint16_t m_Depth = 0;
 
@@ -190,7 +184,9 @@ class QuadTreeStatic
 	using ContainerType = std::list<IndexType>;
 
 public:
-	QuadTreeStatic(const glm::vec2& position, const glm::vec2& size) : m_Root(Area(position, size)) {}
+	QuadTreeStatic(const glm::vec2& position, const glm::vec2& area)
+		: m_Root(Area(position, area))
+	{}
 
 	size_t Size() const { return m_Elements.size(); }
 
@@ -206,12 +202,18 @@ public:
 		m_Root.Insert(std::prev(m_Elements.end()), elementSize);
 	}
 
-	// returns a list of iterators (pointing to indexes) to the elements of this structure
-	std::list<typename ContainerType::iterator> Query(const Area& area) const
+	void Query(const Area& area, std::vector<IndexType>& result) const
 	{
-		std::list<typename ContainerType::iterator> result;
-		m_Root.Query(area, result);
-		return result;
+		std::list<typename ContainerType::iterator> resultIterators;
+		m_Root.Query(area, resultIterators);
+
+		result.clear();
+		result.reserve(resultIterators.size());
+
+		for (const auto& it : resultIterators)
+		{
+			result.push_back(*it);
+		}
 	}
 
 private:

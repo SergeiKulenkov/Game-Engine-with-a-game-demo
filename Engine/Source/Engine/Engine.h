@@ -53,8 +53,9 @@ private:
 	bool m_Running = false;
 
 	float m_TimeStep = 0.0f;
+	// in seconds
 	float m_FrameTime = 0.0f;
-	float m_LastFrameTime = 0.0f;
+	float m_EllapsedTime = 0.0f;
 
 	GLFWwindow* m_Window = nullptr;
 

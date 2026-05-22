@@ -53,7 +53,6 @@ void Scene::Update(float deltaTime)
 
 void Scene::Render()
 {
-	//ScopedTimer timer("render", true);
 	// GetBackgroundDrawList() doesn't return nullptr, so no need to check for it
 	m_DrawList = ImGui::GetBackgroundDrawList();
 	for (auto& [id, entity] : m_Entities)
@@ -66,7 +65,6 @@ void Scene::Render()
 		entity->DrawDebug(m_RendererDebug);
 	}
 
-	m_FrameTime = m_Timer.ElapsedMilliseconds();
 	if (m_DebugWindow != nullptr) m_DebugWindow->Render();
 }
 

@@ -29,6 +29,10 @@ struct AABB
 		: min(min), max(max)
 	{}
 
+	glm::vec2 GetSize() const { return glm::vec2(max.x - min.x, max.y - min.y); }
+
+	////////////////////
+
 	glm::vec2 min;
 	glm::vec2 max;
 };
@@ -59,6 +63,7 @@ public:
 	ShapeType GetType() const { return m_Type; }
 	size_t GetId() const { return m_Id; }
 
+	// only for dynamic collidrs
 	size_t GetRigidbodyId() const;
 
 	glm::vec2 GetPosition() const { return m_TransformData->position; }

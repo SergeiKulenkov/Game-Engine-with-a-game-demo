@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "../Utility/Timer.h"
 
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
@@ -516,8 +517,10 @@ void Engine::RunScene()
 
     while (!glfwWindowShouldClose(m_Window) && m_Running)
     {
+        ScopedTimer timer("whole loop", true);
         glfwPollEvents();
 
+        m_Scene->SetFrameTime(m_FrameTime * 1000);
         m_Scene->Update(m_TimeStep);
 
         // Resize swap chain?
@@ -560,9 +563,10 @@ void Engine::RunScene()
         }
 
         float time = (float)glfwGetTime();
-        m_FrameTime = time - m_LastFrameTime;
+        // subtract ellapsed time of the previous frame from the current ellapsed time
+        m_FrameTime = time - m_EllapsedTime;
         m_TimeStep = glm::min<float>(m_FrameTime, 0.0333f);
-        m_LastFrameTime = time;
+        m_EllapsedTime = time;
     }
 }
 

@@ -83,7 +83,7 @@ public:
 	}
 
 	// returning Ids
-	void Query(const glm::vec2& position, const glm::vec2& areaSize, std::unordered_set<size_t>& result)
+	void Query(const glm::vec2& position, const glm::vec2& areaSize, std::unordered_set<size_t>& result) const
 	{
 		const glm::vec2 min = glm::vec2(position.x - areaSize.x / 2.f, position.y - areaSize.y / 2.f);
 		const glm::vec2 max = glm::vec2(position.x + areaSize.x / 2.f, position.y + areaSize.y / 2.f);
@@ -91,8 +91,11 @@ public:
 	}
 
 	// returning Ids
-	void Query(const AABB& boundingBox, std::unordered_set<size_t>& result)
+	void Query(const AABB& boundingBox, std::unordered_set<size_t>& result) const
 	{
+		result.clear();
+		result.reserve(defaultElementCount);
+
 		const Cell cellA = GetCell(boundingBox.min);
 		const Cell cellB = GetCell(boundingBox.max);
 
@@ -111,6 +114,7 @@ public:
 		}
 	}
 
+	// need the AABB because an element may be removed and reinserted
 	void Update(const AABB& boundingBox, const size_t Id)
 	{
 		// first check if the element still occupies the same cells

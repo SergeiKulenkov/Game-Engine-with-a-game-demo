@@ -3,7 +3,6 @@
 #include <limits>
 
 #include "Component/Rigidbody.h"
-
 #include "../Utility/Utility.h"
 #include "../Utility/Timer.h"
 
@@ -14,63 +13,53 @@
 
 void Physics::Start(const glm::vec2& screenSize)
 {
-	m_QuadTree = QuadTreeStatic<size_t>(glm::vec2(0.f, 0.f), screenSize);
-	//m_SpatialHashGrid = SpatialHashGrid(screenSize);
+	m_QuadTree = QuadTreeDynamic<size_t>(glm::vec2(0.f, 0.f), screenSize);
 }
 
 void Physics::Update(float deltaTime)
 {
-	m_QuadTree.Clear();
-
+	ScopedTimer timer("Physics Update", true);
 	for (const std::weak_ptr<Collider>& collider : m_Colliders)
 	{
 		const std::shared_ptr<Collider> sharedCollider = collider.lock();
 		ASSERT_COLLIDER_SHARED_PTR(sharedCollider);
 		// don't need to update static objects
-		//if (!sharedCollider->IsEnabled() || !sharedCollider->IsDynamic()) continue;
-		if (!sharedCollider->IsEnabled()) continue;
+		if (!sharedCollider->IsEnabled() || !sharedCollider->IsDynamic()) continue;
 
-		// TODO: remove after implementing dynamic quad tree, for now it needs to add static objects
-		if (sharedCollider->IsDynamic())
-		{
-			const std::shared_ptr<Rigidbody> sharedRigidbody = m_Rigidbodies[sharedCollider->GetRigidbodyId()].lock();
-			ASSERT_RIGIDBODY_SHARED_PTR(sharedRigidbody);
-			sharedRigidbody->Update(deltaTime);
-		}
+		const std::shared_ptr<Rigidbody> sharedRigidbody = m_Rigidbodies[sharedCollider->GetRigidbodyId()].lock();
+		ASSERT_RIGIDBODY_SHARED_PTR(sharedRigidbody);
+		sharedRigidbody->Update(deltaTime);
 
-		//m_SpatialHashGrid.Update(sharedCollider->GetAABB(), sharedCollider->GetId());
-
-		// build the quad tree (it should be a dynamic tree, but rebuilding is still faster than checking every collider against every other)
-		// actually for 205 entities this is around 4.5 times faster, 18ms VS 4ms in a debug build
 		const AABB boundingBox = sharedCollider->GetAABB();
-		const glm::vec2 size = glm::vec2(boundingBox.max.x - boundingBox.min.x, boundingBox.max.y - boundingBox.min.y);
-		m_QuadTree.Insert(sharedCollider->GetId(), Area(sharedCollider->GetAABB().min, size));
+		m_QuadTree.Update(sharedCollider->GetId(), Area(boundingBox.min, boundingBox.GetSize()));
 	}
 
-	//SpatialHashGridCollisions();
 	QuadTreeCollisionDetection();
+	//SpatialHashGridCollisions();
 	//SimpleCollisionDetections();
 }
 
 size_t Physics::AddCollider(const std::weak_ptr<Collider>& collider)
 {
 	m_Colliders.push_back(collider);
-	//if (!collider.expired())
-	//{
-	//	const std::shared_ptr<Collider> sharedCollider = collider.lock();
-	//	m_SpatialHashGrid.Insert(sharedCollider->GetAABB(), m_Colliders.size() - 1);
-	//}
+	if (!collider.expired())
+	{
+		const std::shared_ptr<Collider> sharedCollider = collider.lock();
+		const AABB boundingBox = sharedCollider->GetAABB();
+		m_QuadTree.Insert(m_Colliders.size() - 1, Area(boundingBox.min, boundingBox.GetSize()));
+	}
 
 	return m_Colliders.size() - 1;
 }
 
 void Physics::RemoveCollider(const size_t id)
 {
-	//if (!m_Colliders[id].expired())
-	//{
-	//	const std::shared_ptr<Collider> sharedCollider = m_Colliders[id].lock();
-	//	m_SpatialHashGrid.Remove(sharedCollider->GetAABB(), sharedCollider->GetId());
-	//}
+	if (!m_Colliders[id].expired())
+	{
+		const std::shared_ptr<Collider> sharedCollider = m_Colliders[id].lock();
+		const AABB boundingBox = sharedCollider->GetAABB();
+		m_QuadTree.Remove(sharedCollider->GetId(), Area(boundingBox.min, boundingBox.GetSize()));
+	}
 
 	m_Colliders[id] = m_Colliders[m_Colliders.size() - 1];
 	m_Colliders.pop_back();
@@ -97,8 +86,6 @@ void Physics::SpatialHashGridCollisions()
 	//	ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
 	//	if (!sharedColliderA->IsEnabled()) continue;
 
-	//	m_QueryResults.clear();
-	//	m_QueryResults.reserve(8);
 	//	m_SpatialHashGrid.Query(sharedColliderA->GetAABB(), m_QueryResults);
 	//	for (const size_t id : m_QueryResults)
 	//	{
@@ -132,13 +119,13 @@ void Physics::QuadTreeCollisionDetection()
 		if (!sharedColliderA->IsEnabled()) continue;
 
 		const AABB boundingBox = sharedColliderA->GetAABB();
-		const glm::vec2 size = glm::vec2(boundingBox.max.x - boundingBox.min.x, boundingBox.max.y - boundingBox.min.y);
-		for (const auto& iterator : m_QuadTree.Query(Area(sharedColliderA->GetAABB().min, size)))
+		m_QuadTree.Query(Area(boundingBox.min, boundingBox.GetSize()), m_QuadTreeQueryResult);
+		for (const size_t foundId : m_QuadTreeQueryResult)
 		{
 			// exclude self
-			if (*iterator != sharedColliderA->GetId())
+			if (foundId != sharedColliderA->GetId())
 			{
-				const std::shared_ptr<Collider> sharedColliderB = m_Colliders[*iterator].lock();
+				const std::shared_ptr<Collider> sharedColliderB = m_Colliders[foundId].lock();
 				ASSERT_COLLIDER_SHARED_PTR(sharedColliderB);
 
 				// skip if second is disabled or both are static
@@ -149,8 +136,8 @@ void Physics::QuadTreeCollisionDetection()
 				}
 
 				std::shared_ptr<Collision> collision = std::make_shared<Collision>();
-				Collide(indexA, sharedColliderA->GetType(), *iterator, sharedColliderB->GetType(), collision);
-				if (collision->detected) ResolveCollision(indexA, *iterator, collision);
+				Collide(indexA, sharedColliderA->GetType(), foundId, sharedColliderB->GetType(), collision);
+				if (collision->detected) ResolveCollision(indexA, foundId, collision);
 			}
 		}
 	}
