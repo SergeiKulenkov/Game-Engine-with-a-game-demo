@@ -44,7 +44,8 @@ template<typename IteratorType>
 class Node
 {
 public:
-	Node(const Area& area, const uint16_t depth = 0) : m_Area(area), m_Depth(depth)
+	Node(const Area& area, const uint16_t depth = 0)
+		: m_Area(area), m_Depth(depth)
 	{
 		m_Elements.reserve(defaultElementCount);
 	}
@@ -115,6 +116,42 @@ public:
 				}
 			}
 		}
+	}
+
+	template<IntegralType IndexType>
+	bool Remove(const IndexType data, const Area& area, IteratorType& element)
+	{
+		bool found = false;
+		uint16_t index = 0;
+		for (const auto& [elementArea, iterator] : m_Elements)
+		{
+			if (area.Overlaps(elementArea) &&
+				(*iterator == data))
+			{
+				element = iterator;
+				m_Elements[index] = m_Elements[m_Elements.size() - 1];
+				m_Elements.pop_back();
+
+				found = true;
+				break;
+			}
+
+			index++;
+		}
+
+		if (!found)
+		{
+			for (uint16_t i = 0; i < quadCount; i++)
+			{
+				if (m_Children[i] != nullptr)
+				{
+					found = m_Children[i]->Remove(data, area, element);
+					if (found) break;
+				}
+			}
+		}
+
+		return found;
 	}
 
 private:
@@ -196,10 +233,10 @@ public:
 		m_Elements.clear();
 	}
 
-	void Insert(const IndexType element, const Area& elementSize)
+	void Insert(const IndexType data, const Area& area)
 	{
-		m_Elements.push_back(element);
-		m_Root.Insert(std::prev(m_Elements.end()), elementSize);
+		m_Elements.push_back(data);
+		m_Root.Insert(std::prev(m_Elements.end()), area);
 	}
 
 	void Query(const Area& area, std::vector<IndexType>& result) const
@@ -214,6 +251,13 @@ public:
 		{
 			result.push_back(*it);
 		}
+	}
+
+	void Remove(const IndexType data, const Area& area)
+	{
+		typename ContainerType::iterator it;
+		m_Root.Remove(data, area, it);
+		m_Elements.erase(it);
 	}
 
 private:

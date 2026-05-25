@@ -11,44 +11,46 @@
 
 ////////////////////
 
+Physics::Physics()
+{
+	m_Colliders.reserve(defaultObjectsCount);
+	m_Rigidbodies.reserve(defaultObjectsCount);
+}
+
 void Physics::Start(const glm::vec2& screenSize)
 {
-	m_QuadTree = QuadTreeDynamic<size_t>(glm::vec2(0.f, 0.f), screenSize);
+	m_QuadTree = QuadTreeStatic<size_t>(glm::vec2(0.f, 0.f), screenSize);
 }
 
 void Physics::Update(float deltaTime)
 {
 	ScopedTimer timer("Physics Update", true);
+	// for most cases with many dynamic objects recreating the quad tree is fine
+	m_QuadTree.Clear();
+
 	for (const std::weak_ptr<Collider>& collider : m_Colliders)
 	{
 		const std::shared_ptr<Collider> sharedCollider = collider.lock();
 		ASSERT_COLLIDER_SHARED_PTR(sharedCollider);
-		// don't need to update static objects
-		if (!sharedCollider->IsEnabled() || !sharedCollider->IsDynamic()) continue;
+		if (!sharedCollider->IsEnabled()) continue;
 
-		const std::shared_ptr<Rigidbody> sharedRigidbody = m_Rigidbodies[sharedCollider->GetRigidbodyId()].lock();
-		ASSERT_RIGIDBODY_SHARED_PTR(sharedRigidbody);
-		sharedRigidbody->Update(deltaTime);
+		if (sharedCollider->IsDynamic())
+		{
+			const std::shared_ptr<Rigidbody> sharedRigidbody = m_Rigidbodies[sharedCollider->GetRigidbodyId()].lock();
+			ASSERT_RIGIDBODY_SHARED_PTR(sharedRigidbody);
+			sharedRigidbody->Update(deltaTime);
+		}
 
 		const AABB boundingBox = sharedCollider->GetAABB();
-		m_QuadTree.Update(sharedCollider->GetId(), Area(boundingBox.min, boundingBox.GetSize()));
+		m_QuadTree.Insert(sharedCollider->GetId(), Area(boundingBox.min, boundingBox.GetSize()));
 	}
 
 	QuadTreeCollisionDetection();
-	//SpatialHashGridCollisions();
-	//SimpleCollisionDetections();
 }
 
 size_t Physics::AddCollider(const std::weak_ptr<Collider>& collider)
 {
 	m_Colliders.push_back(collider);
-	if (!collider.expired())
-	{
-		const std::shared_ptr<Collider> sharedCollider = collider.lock();
-		const AABB boundingBox = sharedCollider->GetAABB();
-		m_QuadTree.Insert(m_Colliders.size() - 1, Area(boundingBox.min, boundingBox.GetSize()));
-	}
-
 	return m_Colliders.size() - 1;
 }
 
@@ -111,7 +113,7 @@ void Physics::SpatialHashGridCollisions()
 
 void Physics::QuadTreeCollisionDetection()
 {
-	//ScopedTimer timer("Detection", true);
+	ScopedTimer timer("Detection", true);
 	for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
 	{
 		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();

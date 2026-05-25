@@ -165,6 +165,7 @@ public:
 					if (it->data == id)
 					{
 						element = it;
+						found = true;
 						break;
 					}
 				}

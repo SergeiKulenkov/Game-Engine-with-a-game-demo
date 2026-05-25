@@ -49,7 +49,7 @@ public:
 	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, const std::shared_ptr<RaycastHit>& hitResult) { return Raycast(Ray(origin, direction, length), hitResult); }
 
 private:
-	Physics() {}
+	Physics();
 	~Physics() {}
 
 	void Start(const glm::vec2& screenSize);
@@ -97,10 +97,12 @@ private:
 
 	////////////////////
 
+	static constexpr uint16_t defaultObjectsCount = 100;
+
 	std::vector<std::weak_ptr<Collider>> m_Colliders;
 	std::vector<std::weak_ptr<Rigidbody>> m_Rigidbodies;
 	
-	QuadTreeDynamic<size_t> m_QuadTree = QuadTreeDynamic<size_t>(glm::vec2(0.f, 0.f), glm::vec2(1920.f, 1080.f));
+	QuadTreeStatic<size_t> m_QuadTree = QuadTreeStatic<size_t>(glm::vec2(0.f, 0.f), glm::vec2(1920.f, 1080.f));
 	std::vector<size_t> m_QuadTreeQueryResult;
 
 	friend class Scene;
