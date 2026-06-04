@@ -30,11 +30,9 @@ void Collider::OnRemove()
 	sharedEntity->UnregisterCollider(m_Id);
 }
 
-void Collider::SetDynamic(bool isDynamic, size_t rigidbodyId)
+void Collider::SetDynamic(bool isDynamic)
 {
 	m_IsDynamic = isDynamic;
-	m_RigidbodyId = rigidbodyId;
-
 	if (!m_IsDynamic) m_AABB = GetAABB();
 }
 

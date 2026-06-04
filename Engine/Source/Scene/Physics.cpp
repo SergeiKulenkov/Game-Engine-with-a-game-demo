@@ -19,7 +19,7 @@ Physics::Physics()
 
 void Physics::Start(const glm::vec2& screenSize)
 {
-	m_QuadTree = QuadTreeStatic<size_t>(glm::vec2(0.f, 0.f), screenSize);
+	m_QuadTree = QuadTree<size_t>(glm::vec2(0.f, 0.f), screenSize);
 }
 
 void Physics::Update(float deltaTime)
@@ -36,6 +36,7 @@ void Physics::Update(float deltaTime)
 
 		if (sharedCollider->IsDynamic())
 		{
+			sharedCollider->ResetCollided();
 			const std::shared_ptr<Rigidbody> sharedRigidbody = m_Rigidbodies[sharedCollider->GetRigidbodyId()].lock();
 			ASSERT_RIGIDBODY_SHARED_PTR(sharedRigidbody);
 			sharedRigidbody->Update(deltaTime);
@@ -56,59 +57,45 @@ size_t Physics::AddCollider(const std::weak_ptr<Collider>& collider)
 
 void Physics::RemoveCollider(const size_t id)
 {
+	// copying the last collider at the id position, then using pop_back
 	if (!m_Colliders[id].expired())
 	{
+		// so find the last element in the quad tree, set it to id, then remove id
 		const std::shared_ptr<Collider> sharedCollider = m_Colliders[id].lock();
+		const std::shared_ptr<Collider> sharedColliderLast = m_Colliders[m_Colliders.size() - 1].lock();
 		const AABB boundingBox = sharedCollider->GetAABB();
-		m_QuadTree.Remove(sharedCollider->GetId(), Area(boundingBox.min, boundingBox.GetSize()));
+		const AABB boundingBoxLast = sharedColliderLast->GetAABB();
+
+		m_QuadTree.UpdateId(sharedColliderLast->GetId(), Area(boundingBoxLast.min, boundingBoxLast.GetSize()), id);
+		m_QuadTree.Remove(id, Area(boundingBox.min, boundingBox.GetSize()));
 	}
 
 	m_Colliders[id] = m_Colliders[m_Colliders.size() - 1];
+	if (!m_Colliders[id].expired())
+	{
+		// minus 2 because there's pop_back below
+		m_Colliders[id].lock()->ResetId(id);
+	}
+
 	m_Colliders.pop_back();
 }
 
 size_t Physics::AddRigidbody(const std::weak_ptr<Rigidbody>& rigidbody)
 {
 	m_Rigidbodies.push_back(rigidbody);
-	return m_Rigidbodies.size() - 1;;
+	return m_Rigidbodies.size() - 1;
 }
 
 void Physics::RemoveRigidbody(const size_t id)
 {
 	m_Rigidbodies[id] = m_Rigidbodies[m_Rigidbodies.size() - 1];
+	if (!m_Rigidbodies[id].expired())
+	{
+		// minus 2 because there's pop_back below
+		m_Rigidbodies[id].lock()->ResetId(id);
+	}
+
 	m_Rigidbodies.pop_back();
-}
-
-void Physics::SpatialHashGridCollisions()
-{
-	//ScopedTimer timer("Detection", true);
-	//for (size_t indexA = 0; indexA < m_Colliders.size() - 1; indexA++)
-	//{
-	//	const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
-	//	ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
-	//	if (!sharedColliderA->IsEnabled()) continue;
-
-	//	m_SpatialHashGrid.Query(sharedColliderA->GetAABB(), m_QueryResults);
-	//	for (const size_t id : m_QueryResults)
-	//	{
-	//		if (id != sharedColliderA->GetId() && id < m_Colliders.size())
-	//		{
-	//			const std::shared_ptr<Collider> sharedColliderB = m_Colliders[id].lock();
-	//			ASSERT_COLLIDER_SHARED_PTR(sharedColliderB);
-
-	//			// skip if second is disabled or both are static
-	//			if (!sharedColliderB->IsEnabled() ||
-	//				(!sharedColliderA->IsDynamic() && !sharedColliderB->IsDynamic()))
-	//			{
-	//				continue;
-	//			}
-
-	//			std::shared_ptr<Collision> collision = std::make_shared<Collision>();
-	//			Collide(indexA, sharedColliderA->GetType(), id, sharedColliderB->GetType(), collision);
-	//			if (collision->detected) ResolveCollision(indexA, id, collision);
-	//		}
-	//	}
-	//}
 }
 
 void Physics::QuadTreeCollisionDetection()
@@ -118,29 +105,26 @@ void Physics::QuadTreeCollisionDetection()
 	{
 		const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
 		ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
-		if (!sharedColliderA->IsEnabled()) continue;
+		// if a collider has already collided, don't process it again
+		if (!sharedColliderA->IsEnabled() || sharedColliderA->HasCollided()) continue;
 
 		const AABB boundingBox = sharedColliderA->GetAABB();
-		m_QuadTree.Query(Area(boundingBox.min, boundingBox.GetSize()), m_QuadTreeQueryResult);
+		m_QuadTree.Query(Area(boundingBox.min, boundingBox.GetSize()), m_QuadTreeQueryResult, sharedColliderA->GetId());
 		for (const size_t foundId : m_QuadTreeQueryResult)
 		{
-			// exclude self
-			if (foundId != sharedColliderA->GetId())
+			const std::shared_ptr<Collider> sharedColliderB = m_Colliders[foundId].lock();
+			ASSERT_COLLIDER_SHARED_PTR(sharedColliderB);
+			
+			// skip if second is disabled, has already collided or both are static
+			if (!sharedColliderB->IsEnabled() || sharedColliderA->HasCollided() ||
+				(!sharedColliderA->IsDynamic() && !sharedColliderB->IsDynamic()))
 			{
-				const std::shared_ptr<Collider> sharedColliderB = m_Colliders[foundId].lock();
-				ASSERT_COLLIDER_SHARED_PTR(sharedColliderB);
-
-				// skip if second is disabled or both are static
-				if (!sharedColliderB->IsEnabled() ||
-					(!sharedColliderA->IsDynamic() && !sharedColliderB->IsDynamic()))
-				{
-					continue;
-				}
-
-				std::shared_ptr<Collision> collision = std::make_shared<Collision>();
-				Collide(indexA, sharedColliderA->GetType(), foundId, sharedColliderB->GetType(), collision);
-				if (collision->detected) ResolveCollision(indexA, foundId, collision);
+				continue;
 			}
+
+			std::shared_ptr<Collision> collision = std::make_shared<Collision>();
+			Collide(indexA, sharedColliderA->GetType(), foundId, sharedColliderB->GetType(), collision);
+			if (collision->detected) ResolveCollision(indexA, foundId, collision);
 		}
 	}
 }

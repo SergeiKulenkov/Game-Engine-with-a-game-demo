@@ -6,7 +6,7 @@
 
 void Entity::OnDestroy()
 {
-	for (auto it = m_Components.begin(); it != m_Components.end(); ++it)
+	for (auto it = m_Components.begin(); it != m_Components.end();)
 	{
 		it->second->OnRemove();
 		it = m_Components.erase(it);

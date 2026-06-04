@@ -10,6 +10,8 @@
 #include <Scene/Component/Rigidbody.h>
 #include <Utility/Utility.h>
 
+#include "../Environment/Wall.h"
+
 ////////////////////
 
 void Player::OnInit()
@@ -60,12 +62,19 @@ void Player::OnCollision(const std::shared_ptr<Collision>& other)
 {
 	m_Speed = 0.f;
 
-	//const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-	//ASSERT_SCENE_SHARED_PTR(sharedScene);
-	//sharedScene->DestroyEntity(other->entity.lock()->GetId());
+	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
+	ASSERT_SCENE_SHARED_PTR(sharedScene);
+	if (!other->entity.expired())
+	{
+		const std::shared_ptr<Entity> sharedEntity = other->entity.lock();
+		if (std::dynamic_pointer_cast<Wall>(sharedEntity) == nullptr)
+		{
+			sharedScene->DestroyEntity(sharedEntity->GetId());
+		}
+	}
 
-	// here can also access the entity inside Collision and call its functions
-	// for example it can be an Obstacle, so can call ChangeColour
+	// here also access the entity inside Collision and call its functions
+	// for example it can be an Obstacle, so call ChangeColour
 }
 
 glm::vec2 Player::GetMovementInput() const
@@ -96,21 +105,23 @@ void Player::DrawDebug(const RendererDebug& rendererDebug)
 	//rendererDebug.DrawLine(m_Transform->position, m_Transform->position + m_Transform->rotation * 30.f, Colour::green);
 	
 	// testing raycast
-	//std::shared_ptr<RaycastHit> hitResult = std::make_shared<RaycastHit>();
-	//const glm::vec2 origin = m_Transform->position + m_Transform->rotation * 20.f;
-	//const float length = 80.f;
-	//const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-	//ASSERT_SCENE_SHARED_PTR(sharedScene);
-
-	//for (int i = 0; i < 9; i++)
 	//{
-	//	glm::vec2 dir = m_Transform->rotation;
-	//	dir.y -= 0.2f * i;
-	//	rendererDebug.DrawLine(origin, origin + dir * length, Colour::green);
+		//std::shared_ptr<RaycastHit> hitResult = std::make_shared<RaycastHit>();
+		//const glm::vec2 origin = m_Transform->position + m_Transform->rotation * 20.f;
+		//const float length = 80.f;
+		//const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
+		//ASSERT_SCENE_SHARED_PTR(sharedScene);
 
-	//	if (sharedScene->Raycast(origin, dir, length, hitResult))
-	//	{
-	//		rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);
-	//	}
+		//for (int i = 0; i < 9; i++)
+		//{
+		//	glm::vec2 dir = m_Transform->rotation;
+		//	dir.y -= 0.2f * i;
+		//	rendererDebug.DrawLine(origin, origin + dir * length, Colour::green);
+
+		//	if (sharedScene->Raycast(origin, dir, length, hitResult))
+		//	{
+		//		rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);
+		//	}
+		//}
 	//}
 }

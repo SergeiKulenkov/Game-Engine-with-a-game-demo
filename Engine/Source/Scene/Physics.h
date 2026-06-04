@@ -6,8 +6,7 @@
 #include <glm/glm.hpp>
 
 #include "Component/Collider.h"
-#include "../Utility/DataStructures/QuadTreeStatic.h"
-#include "../Utility/DataStructures/QuadTreeDynamic.h"
+#include "../Utility/DataStructures/QuadTree.h"
 #include "../Utility/DataStructures/SpatialHashGrid.h"
 
 class Scene;
@@ -63,11 +62,14 @@ private:
 	size_t AddRigidbody(const std::weak_ptr<Rigidbody>& rigidbody);
 	void RemoveRigidbody(const size_t id);
 
-	void SpatialHashGridCollisions();
 	// using a dynamic quad tree, so should be O(log n)
 	void QuadTreeCollisionDetection();
 	// check every collider against every other collider, O(n^2)
 	void SimpleCollisionDetections();
+
+	// check collisions using a spatial hash grid
+	// the code is the same as for a quad tree but it needs an unordered_set for query results
+	//void SpatialHashGridCollisions();
 
 	void Collide(const size_t indexA, const ShapeType shapeA, const size_t indexB, const ShapeType shapeB, const std::shared_ptr<Collision>& collision);
 	void ResolveCollision(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
@@ -102,7 +104,7 @@ private:
 	std::vector<std::weak_ptr<Collider>> m_Colliders;
 	std::vector<std::weak_ptr<Rigidbody>> m_Rigidbodies;
 	
-	QuadTreeStatic<size_t> m_QuadTree = QuadTreeStatic<size_t>(glm::vec2(0.f, 0.f), glm::vec2(1920.f, 1080.f));
+	QuadTree<size_t> m_QuadTree = QuadTree<size_t>(glm::vec2(0.f, 0.f), glm::vec2(1920.f, 1080.f));
 	std::vector<size_t> m_QuadTreeQueryResult;
 
 	friend class Scene;

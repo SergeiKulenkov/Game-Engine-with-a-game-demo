@@ -52,29 +52,36 @@ void Rigidbody::OnInit()
 	ASSERRT_HAS_TRANSFORM(sharedEntity->HasComponent<Transform>());
 	m_TransformData = sharedEntity->GetComponent<Transform>()->GetTransformData();
 
-	if (sharedEntity->HasComponent<BoxCollider>())
-	{
-		sharedEntity->GetComponent<BoxCollider>()->SetDynamic(true, m_Id);
-	}
-	else if (sharedEntity->HasComponent<CircleCollider>())
-	{
-		sharedEntity->GetComponent<CircleCollider>()->SetDynamic(true, m_Id);
-	}
+	std::shared_ptr<Collider> collider = GetCollider();
+	collider->SetRigidbodyId(m_Id);
+	collider->SetDynamic(true);
 }
 
 void Rigidbody::OnRemove()
 {
+	GetCollider()->SetDynamic(false);
+}
+
+void Rigidbody::ResetId(const size_t id)
+{
+	m_Id = id;
+	GetCollider()->SetRigidbodyId(m_Id);
+}
+
+std::shared_ptr<Collider> Rigidbody::GetCollider()
+{
+	std::shared_ptr<Collider> collider;
 	const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
 	ASSERT_ENTITY_SHARED_PTR(sharedEntity);
-	sharedEntity->UnregisterRigidbody(m_Id);
 
-	// set collider to static
 	if (sharedEntity->HasComponent<BoxCollider>())
 	{
-		sharedEntity->GetComponent<BoxCollider>()->SetDynamic(false, 0);
+		collider = sharedEntity->GetComponent<BoxCollider>();
 	}
 	else if (sharedEntity->HasComponent<CircleCollider>())
 	{
-		sharedEntity->GetComponent<CircleCollider>()->SetDynamic(false, 0);
+		collider = sharedEntity->GetComponent<CircleCollider>();
 	}
+
+	return collider;
 }

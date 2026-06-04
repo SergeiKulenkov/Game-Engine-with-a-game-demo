@@ -9,6 +9,7 @@
 struct Collsion;
 class Rigidbody;
 class Entity;
+class Physics;
 
 #define ASSERT_COLLIDER_DYNAMIC(isDynamic) assert(isDynamic && "This collider is not dynamic, so doesn't have a rigidbody connected to it.");
 
@@ -46,6 +47,8 @@ public:
 
 	virtual void OnCollision(const std::shared_ptr<Collision>& other)
 	{
+		m_HasCollided = true;
+
 		if (!m_Entity.expired())
 		{
 			const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
@@ -56,6 +59,8 @@ public:
 
 	bool IsDynamic() const { return m_IsDynamic; }
 	bool IsEnabled() const { return m_Enabled; }
+	bool HasCollided() const { return m_HasCollided; }
+	void ResetCollided() { m_HasCollided = false; }
 
 	void Disable() { m_Enabled = false; }
 	void Enable() { m_Enabled = true; }
@@ -85,7 +90,9 @@ protected:
 	virtual void OnInit() override;
 	virtual void OnRemove() override;
 
-	void SetDynamic(bool isDynamic, size_t rigidbodyId);
+	void ResetId(const size_t id) { m_Id = id; }
+	void SetDynamic(bool isDynamic);
+	void SetRigidbodyId(const size_t rigidbodyId) { m_RigidbodyId = rigidbodyId; }
 
 	void RegisterCollider(const size_t colliderType);
 
@@ -96,6 +103,8 @@ protected:
 
 	bool m_IsDynamic = false;
 	bool m_Enabled = true;
+	// has collided this frame, if true, then don't process again
+	bool m_HasCollided = false;
 
 	std::shared_ptr<TransformData> m_TransformData = std::make_shared<TransformData>();
 	AABB m_AABB;
@@ -104,6 +113,7 @@ private:
 	size_t m_RigidbodyId = 0;
 
 	friend class Rigidbody;
+	friend class Physics;
 };
 
 ////////////////////

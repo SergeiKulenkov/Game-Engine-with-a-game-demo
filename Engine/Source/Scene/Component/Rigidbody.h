@@ -3,6 +3,9 @@
 
 #include "Component.h"
 #include "Transform.h"
+#include "Collider.h"
+
+class Physics;
 
 ////////////////////
 
@@ -65,6 +68,12 @@ protected:
 	virtual void OnRemove() override;
 
 private:
+	void ResetId(const size_t id);
+
+	std::shared_ptr<Collider> GetCollider();
+
+	////////////////////
+
 	size_t m_Id = 0;
 
 	glm::vec2 m_LinearVelocity = glm::vec2(0.f, 0.f);
@@ -82,4 +91,6 @@ private:
 	float m_InverseInertia = 0.f;
 
 	std::shared_ptr<TransformData> m_TransformData;
+
+	friend class Physics;
 };
