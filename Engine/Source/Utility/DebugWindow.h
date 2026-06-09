@@ -74,9 +74,9 @@ public:
 					if (pressed) *section.activatedIndex = i;
 					if (i != section.labels.size() - 1) ImGui::SameLine();
 				}
+				ImGui::Separator();
 			}
 
-			ImGui::Separator();
 			for (const DebugField& field : m_Fields)
 			{
 				if (!field.editable) ImGui::Text(field.name.c_str(), *field.value);
