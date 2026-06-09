@@ -57,6 +57,10 @@ public:
 	glm::vec2& GetScale() { return m_TransformData->scale; }
 	void SetScale(const glm::vec2& scale) { m_TransformData->scale = scale; }
 
+protected:
+	virtual void OnInit() {}
+	virtual void OnRemove() {}
+
 private:
 	std::shared_ptr<TransformData> m_TransformData = std::make_shared<TransformData>();
 };

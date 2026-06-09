@@ -1,15 +1,26 @@
 #pragma once
 #include <string_view>
+#include <array>
 
 #include <glm/glm.hpp>
 
 #include <Scene/Entity.h>
 
-////////////////////
-
 class Scene;
 class Rigidbody;
 struct TransformData;
+
+////////////////////
+
+enum DrawDebugChoice : uint8_t
+{
+	None = 0,
+	Circle,
+	Raycast,
+	Max,
+};
+
+////////////////////
 
 class Player : public Entity
 {
@@ -45,6 +56,15 @@ private:
 	static constexpr float maxSpeedLimit = 200.f;
 	static constexpr float rotationRate = 3.5f;
 
+	// debug things
+	static constexpr float raycastOffset = 20.f;
+	static constexpr float raycastLength = 100.f;
+	static constexpr std::array<std::string_view, 3> labels = { "None", "Circle", "Raycast" };
+	static constexpr std::string_view maxSpeedField = "Player's Max Speed";
+	static constexpr std::string_view currentSpeedField = "Player's Current Speed";
+	static constexpr std::string_view allowInputField = "Allow input";
+	static constexpr std::string_view debugChoiceField = "Player debug choice";
+
 	////////////////////
 
 	std::shared_ptr<TransformData> m_Transform;
@@ -53,4 +73,6 @@ private:
 
 	float m_Speed = 0.f;
 	float m_MaxSpeed = defaultSpeedLimit;
+	bool m_AllowInput = true;
+	DrawDebugChoice m_DebugChoice = DrawDebugChoice::Circle;
 };

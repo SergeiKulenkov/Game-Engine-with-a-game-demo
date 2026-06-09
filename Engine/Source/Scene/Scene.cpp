@@ -96,3 +96,13 @@ void Scene::RegisterDebugWindowField(const std::string& name, float* value, cons
 {
 	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterField(name, value, numberOfFractionalDigits);
 }
+
+void Scene::RegisterCheckbox(const std::string_view& name, bool* activated)
+{
+	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterCheckbox(name, activated);
+}
+
+void Scene::RegisterRadioButton(const std::string_view& sectionTitle, uint8_t* activatedIndex, const std::vector<std::string_view>& labels)
+{
+	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterRadioButton(sectionTitle, activatedIndex, labels);
+}

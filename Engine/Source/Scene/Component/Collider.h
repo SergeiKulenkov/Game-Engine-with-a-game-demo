@@ -15,7 +15,7 @@ class Physics;
 
 ////////////////////
 
-enum class ShapeType
+enum class ShapeType : uint8_t
 {
 	Undefined,
 	Box,

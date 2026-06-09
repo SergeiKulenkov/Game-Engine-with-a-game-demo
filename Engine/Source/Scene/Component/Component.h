@@ -6,6 +6,7 @@ class Entity;
 
 #define ASSERT_ENTITY_SHARED_PTR(entity) assert(entity && "Can't get Entity's shared pointer for this Component because it's no longer valid.");
 #define ASSERRT_HAS_TRANSFORM(hasTransform) assert(hasTransform && "Tranform Component is not present.");
+#define ASSERT_TRANSFORM_SHARED_PTR(transform) assert(transform && "Can't get Transform's shared pointer because it's no longer valid.");
 
 ////////////////////
 

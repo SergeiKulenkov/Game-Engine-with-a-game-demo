@@ -1,4 +1,5 @@
 #include "Player.h"
+#include <vector>
 
 #include <Input/InputManager.h>
 #include <Scene/Scene.h>
@@ -23,15 +24,20 @@ void Player::OnInit()
 	AddComponent<CircleCollider>(colliderSize);
 	m_Rigidbody = AddComponent<Rigidbody>(1.f, linearDamping, restitution);
 
+	// testing debug window
 	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
 	ASSERT_SCENE_SHARED_PTR(sharedScene);
-	sharedScene->RegisterEditableDebugWindowField("Player's Max Speed", &m_MaxSpeed, maxSpeedLimit, 0.f, 2);
-	sharedScene->RegisterDebugWindowField("Player's Current Speed", &m_Speed, 2);
+	sharedScene->RegisterEditableDebugWindowField(maxSpeedField.data(), &m_MaxSpeed, maxSpeedLimit, 0.f);
+	sharedScene->RegisterDebugWindowField(currentSpeedField.data(), &m_Speed);
+	sharedScene->RegisterCheckbox(allowInputField, &m_AllowInput);
+	sharedScene->RegisterRadioButton(debugChoiceField, (uint8_t*)(&m_DebugChoice), std::vector(labels.begin(), labels.end()));
 }
 
 void Player::Update(float deltaTime)
 {
-	const glm::vec2 input = GetMovementInput();
+	glm::vec2 input = glm::vec2(0.f, 0.f);
+	if (m_AllowInput) input = GetMovementInput();
+
 	if (input.x != 0)
 	{
 		m_Transform->rotation = Vector::Rotate(m_Transform->rotation, rotationRate * deltaTime * input.x);
@@ -94,34 +100,38 @@ glm::vec2 Player::GetMovementInput() const
 
 void Player::DrawDebug(const RendererDebug& rendererDebug)
 {
-	// draw box collider
-	//AABB boundingBox = GetComponent<BoxCollider>()->GetAABB();
-	//rendererDebug.DrawRectangle(boundingBox.min, boundingBox.max, Colour::green);
+	switch (m_DebugChoice)
+	{
+		case DrawDebugChoice::Circle:
+		{
+			if (HasComponent<CircleCollider>())
+			{
+				rendererDebug.DrawCircle(m_Transform->position, GetComponent<CircleCollider>()->GetRadius(), Colour::green);
+			}
+			break;
+		}
+		case DrawDebugChoice::Raycast:
+		{
+			const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
+			ASSERT_SCENE_SHARED_PTR(sharedScene);
+			std::shared_ptr<RaycastHit> hitResult = std::make_shared<RaycastHit>();
+			const glm::vec2 origin = m_Transform->position + m_Transform->rotation * raycastOffset;
 
-	// draw circle collider
-	rendererDebug.DrawCircle(m_Transform->position, GetComponent<CircleCollider>()->GetRadius(), Colour::green);
+			for (int i = 0; i < 9; i++)
+			{
+				glm::vec2 dir = m_Transform->rotation;
+				dir.y -= 0.2f * i;
+				rendererDebug.DrawLine(origin, origin + dir * raycastLength, Colour::green);
 
-	// draw player's direction
-	//rendererDebug.DrawLine(m_Transform->position, m_Transform->position + m_Transform->rotation * 30.f, Colour::green);
-	
-	// testing raycast
-	//{
-		//std::shared_ptr<RaycastHit> hitResult = std::make_shared<RaycastHit>();
-		//const glm::vec2 origin = m_Transform->position + m_Transform->rotation * 20.f;
-		//const float length = 80.f;
-		//const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-		//ASSERT_SCENE_SHARED_PTR(sharedScene);
-
-		//for (int i = 0; i < 9; i++)
-		//{
-		//	glm::vec2 dir = m_Transform->rotation;
-		//	dir.y -= 0.2f * i;
-		//	rendererDebug.DrawLine(origin, origin + dir * length, Colour::green);
-
-		//	if (sharedScene->Raycast(origin, dir, length, hitResult))
-		//	{
-		//		rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);
-		//	}
-		//}
-	//}
+				if (sharedScene->Raycast(origin, dir, raycastLength, hitResult))
+				{
+					rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);
+				}
+			}
+			break;
+		}
+		case DrawDebugChoice::None:
+		default:
+			break;
+	}
 }

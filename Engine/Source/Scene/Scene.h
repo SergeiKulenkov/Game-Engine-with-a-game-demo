@@ -81,6 +81,8 @@ public:
 
 	void RegisterEditableDebugWindowField(const std::string& name, float* value, float max = 10.f, float min = 0.f, const uint8_t numberOfFractionalDigits = 1);
 	void RegisterDebugWindowField(const std::string& name, float* value, const uint8_t numberOfFractionalDigits = 1);
+	void RegisterCheckbox(const std::string_view& name, bool* activated);
+	void RegisterRadioButton(const std::string_view& sectionTitle, uint8_t* activatedIndex, const std::vector<std::string_view>& labels);
 
 protected:
 	Scene() {}

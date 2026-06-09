@@ -18,6 +18,10 @@ public:
 	std::string& GetTag() { return m_Tag; }
 	void SetTag(const std::string& tag) { m_Tag = tag; }
 
+protected:
+	virtual void OnInit() {}
+	virtual void OnRemove() {}
+
 private:
 	std::string m_Tag = "";
 };
