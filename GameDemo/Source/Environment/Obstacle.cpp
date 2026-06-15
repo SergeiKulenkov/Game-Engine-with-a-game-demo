@@ -35,10 +35,10 @@ void Obstacle::DrawDebug(const RendererDebug& rendererDebug)
 	if (HasComponent<BoxCollider>())
 	{
 		const AABB boundingBox = GetComponent<BoxCollider>()->GetAABB();
-		rendererDebug.DrawRectangle(boundingBox.min, boundingBox.max, m_Colour);
+		//rendererDebug.DrawRectangle(boundingBox.min, boundingBox.max, m_Colour);
 	}
 	else if (HasComponent<CircleCollider>())
 	{
-		rendererDebug.DrawCircle(GetComponent<Transform>()->GetPosition(), GetComponent<CircleCollider>()->GetRadius(), m_Colour);
+		//rendererDebug.DrawCircle(GetComponent<Transform>()->GetPosition(), GetComponent<CircleCollider>()->GetRadius(), m_Colour);
 	}
 }

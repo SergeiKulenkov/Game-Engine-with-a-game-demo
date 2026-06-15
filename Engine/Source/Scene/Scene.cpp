@@ -89,12 +89,22 @@ glm::vec2 Scene::GetScreenSize() const
 
 void Scene::RegisterEditableDebugWindowField(const std::string& name, float* value, float max, float min, const uint8_t numberOfFractionalDigits)
 {
-	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterEditableField(name, value, max, min, numberOfFractionalDigits);
+	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterEditableFieldFloat(name, value, max, min, numberOfFractionalDigits);
 }
 
 void Scene::RegisterDebugWindowField(const std::string& name, float* value, const uint8_t numberOfFractionalDigits)
 {
-	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterField(name, value, numberOfFractionalDigits);
+	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterFieldFloat(name, value, numberOfFractionalDigits);
+}
+
+void Scene::RegisterEditableFieldInteger(const std::string& name, int* value, int max, int min)
+{
+	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterEditableFieldInteger(name, value, max, min);
+}
+
+void Scene::RegisterFieldInteger(const std::string& name, int* value)
+{
+	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterFieldInteger(name, value);
 }
 
 void Scene::RegisterCheckbox(const std::string_view& name, bool* activated)

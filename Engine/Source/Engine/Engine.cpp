@@ -293,6 +293,12 @@ static void CleanupVulkan()
 static void CleanupVulkanWindow()
 {
     ImGui_ImplVulkanH_DestroyWindow(g_Instance, g_Device, &g_MainWindowData, g_Allocator);
+    // Destroy the Vulkan surface if it was created
+    if (g_MainWindowData.Surface != VK_NULL_HANDLE)
+    {
+        vkDestroySurfaceKHR(g_Instance, g_MainWindowData.Surface, g_Allocator);
+        g_MainWindowData.Surface = VK_NULL_HANDLE;
+    }
 }
 
 static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
@@ -549,20 +555,23 @@ void Engine::RunScene()
 
         m_Scene->Render();
 
-        ImGui::Render();
-        ImDrawData* draw_data = ImGui::GetDrawData();
-        const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
-        if (!is_minimized)
         {
-            wd->ClearValue.color.float32[0] = clearColour.x * clearColour.w;
-            wd->ClearValue.color.float32[1] = clearColour.y * clearColour.w;
-            wd->ClearValue.color.float32[2] = clearColour.z * clearColour.w;
-            wd->ClearValue.color.float32[3] = clearColour.w;
-            FrameRender(wd, draw_data);
-            FramePresent(wd);
+            ScopedTimer timerRender("rendering", true);
+            ImGui::Render();
+            ImDrawData* draw_data = ImGui::GetDrawData();
+            const bool is_minimized = (draw_data->DisplaySize.x <= 0.0f || draw_data->DisplaySize.y <= 0.0f);
+            if (!is_minimized)
+            {
+                wd->ClearValue.color.float32[0] = clearColour.x * clearColour.w;
+                wd->ClearValue.color.float32[1] = clearColour.y * clearColour.w;
+                wd->ClearValue.color.float32[2] = clearColour.z * clearColour.w;
+                wd->ClearValue.color.float32[3] = clearColour.w;
+                FrameRender(wd, draw_data);
+                FramePresent(wd);
+            }
         }
 
-        float time = (float)glfwGetTime();
+        float time = static_cast<float>(glfwGetTime());
         // subtract ellapsed time of the previous frame from the current ellapsed time
         m_FrameTime = time - m_EllapsedTime;
         m_TimeStep = glm::min<float>(m_FrameTime, 0.0333f);

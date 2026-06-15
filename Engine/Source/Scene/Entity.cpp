@@ -15,33 +15,29 @@ void Entity::OnDestroy()
 
 size_t Entity::RegisterCollider(const size_t colliderType)
 {
-	const std::shared_ptr sharedScene = m_Scene.lock();
-	ASSERT_SCENE_SHARED_PTR(sharedScene);
-	return sharedScene->RegisterCollider(std::dynamic_pointer_cast<Collider>(m_Components[colliderType]));
+	ASSERT_SCENE_NULLPTR(m_Scene);
+	return m_Scene->RegisterCollider(std::dynamic_pointer_cast<Collider>(m_Components[colliderType]));
 }
 
 void Entity::UnregisterCollider(const size_t id)
 {
-	const std::shared_ptr sharedScene = m_Scene.lock();
-	ASSERT_SCENE_SHARED_PTR(sharedScene);
-	sharedScene->UnRegisterCollider(id);
+	ASSERT_SCENE_NULLPTR(m_Scene);
+	m_Scene->UnRegisterCollider(id);
 }
 
 size_t Entity::RegisterRigidbody()
 {
-	const std::shared_ptr sharedScene = m_Scene.lock();
-	ASSERT_SCENE_SHARED_PTR(sharedScene);
-	return sharedScene->RegisterRigidbody(std::dynamic_pointer_cast<Rigidbody>(m_Components[typeid(Rigidbody).hash_code()]));
+	ASSERT_SCENE_NULLPTR(m_Scene);
+	return m_Scene->RegisterRigidbody(std::dynamic_pointer_cast<Rigidbody>(m_Components[typeid(Rigidbody).hash_code()]));
 }
 
 void Entity::UnregisterRigidbody(const size_t id)
 {
-	const std::shared_ptr sharedScene = m_Scene.lock();
-	ASSERT_SCENE_SHARED_PTR(sharedScene);
-	sharedScene->UnRegisterRigidbody(id);
+	ASSERT_SCENE_NULLPTR(m_Scene);
+	m_Scene->UnRegisterRigidbody(id);
 }
 
-void Entity::Init(const size_t id, const std::shared_ptr<Scene>& scene)
+void Entity::Init(const size_t id, Scene* scene)
 {
 	m_Id = id;
 	m_Scene = scene;

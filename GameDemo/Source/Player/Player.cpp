@@ -25,12 +25,11 @@ void Player::OnInit()
 	m_Rigidbody = AddComponent<Rigidbody>(1.f, linearDamping, restitution);
 
 	// testing debug window
-	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-	ASSERT_SCENE_SHARED_PTR(sharedScene);
-	sharedScene->RegisterEditableDebugWindowField(maxSpeedField.data(), &m_MaxSpeed, maxSpeedLimit, 0.f);
-	sharedScene->RegisterDebugWindowField(currentSpeedField.data(), &m_Speed);
-	sharedScene->RegisterCheckbox(allowInputField, &m_AllowInput);
-	sharedScene->RegisterRadioButton(debugChoiceField, (uint8_t*)(&m_DebugChoice), std::vector(labels.begin(), labels.end()));
+	ASSERT_SCENE_NULLPTR(m_Scene);
+	m_Scene->RegisterEditableDebugWindowField(maxSpeedField.data(), &m_MaxSpeed, maxSpeedLimit, 0.f);
+	m_Scene->RegisterDebugWindowField(currentSpeedField.data(), &m_Speed);
+	m_Scene->RegisterCheckbox(allowInputField, &m_AllowInput);
+	m_Scene->RegisterRadioButton(debugChoiceField, (uint8_t*)(&m_DebugChoice), std::vector(labels.begin(), labels.end()));
 }
 
 void Player::Update(float deltaTime)
@@ -64,18 +63,16 @@ void Player::Update(float deltaTime)
 	}
 }
 
-void Player::OnCollision(const std::shared_ptr<Collision>& other)
+void Player::OnCollision(Collision& other)
 {
 	m_Speed = 0.f;
 
-	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-	ASSERT_SCENE_SHARED_PTR(sharedScene);
-	if (!other->entity.expired())
+	if (!other.entity.expired())
 	{
-		const std::shared_ptr<Entity> sharedEntity = other->entity.lock();
+		const std::shared_ptr<Entity> sharedEntity = other.entity.lock();
 		if (std::dynamic_pointer_cast<Wall>(sharedEntity) == nullptr)
 		{
-			sharedScene->DestroyEntity(sharedEntity->GetId());
+			m_Scene->DestroyEntity(sharedEntity->GetId());
 		}
 	}
 
@@ -112,9 +109,7 @@ void Player::DrawDebug(const RendererDebug& rendererDebug)
 		}
 		case DrawDebugChoice::Raycast:
 		{
-			const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-			ASSERT_SCENE_SHARED_PTR(sharedScene);
-			std::shared_ptr<RaycastHit> hitResult = std::make_shared<RaycastHit>();
+			RaycastHit hitResult;
 			const glm::vec2 origin = m_Transform->position + m_Transform->rotation * raycastOffset;
 
 			for (int i = 0; i < 9; i++)
@@ -123,9 +118,9 @@ void Player::DrawDebug(const RendererDebug& rendererDebug)
 				dir.y -= 0.2f * i;
 				rendererDebug.DrawLine(origin, origin + dir * raycastLength, Colour::green);
 
-				if (sharedScene->Raycast(origin, dir, raycastLength, hitResult))
+				if (m_Scene->Raycast(origin, dir, raycastLength, hitResult))
 				{
-					rendererDebug.DrawCircle(hitResult->contactPoint, 10.f, Colour::pink);
+					rendererDebug.DrawCircle(hitResult.contactPoint, 10.f, Colour::pink);
 				}
 			}
 			break;

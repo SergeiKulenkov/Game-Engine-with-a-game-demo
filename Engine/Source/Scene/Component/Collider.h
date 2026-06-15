@@ -45,7 +45,7 @@ class Collider : public Component
 public:
 	Collider() = delete;
 
-	virtual void OnCollision(const std::shared_ptr<Collision>& other)
+	virtual void OnCollision(Collision& other)
 	{
 		m_HasCollided = true;
 

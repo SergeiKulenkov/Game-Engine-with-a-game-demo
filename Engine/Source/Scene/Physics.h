@@ -44,8 +44,8 @@ struct RaycastHit
 class Physics
 {
 public:
-	bool Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult);
-	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, const std::shared_ptr<RaycastHit>& hitResult) { return Raycast(Ray(origin, direction, length), hitResult); }
+	bool Raycast(const Ray& ray, RaycastHit& hitResult);
+	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, RaycastHit& hitResult) { return Raycast(Ray(origin, direction, length), hitResult); }
 
 private:
 	Physics();
@@ -71,28 +71,28 @@ private:
 	// the code is the same as for a quad tree but it needs an unordered_set for query results
 	//void SpatialHashGridCollisions();
 
-	void Collide(const size_t indexA, const ShapeType shapeA, const size_t indexB, const ShapeType shapeB, const std::shared_ptr<Collision>& collision);
-	void ResolveCollision(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
+	void Collide(const size_t indexA, const ShapeType shapeA, const size_t indexB, const ShapeType shapeB, Collision& collision);
+	void ResolveCollision(const size_t indexA, const size_t indexB, Collision& collision);
 	float CalculateImpulseMagnitude(const float restitution, const float dotVelocityNormal, const float inverseMassSum);
 
 	bool CheckAABBOverlap(const AABB& boxA, const AABB& boxB);
 
-	void CheckRectangleVsRectangle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
+	void CheckRectangleVsRectangle(const size_t indexA, const size_t indexB, Collision& collision);
 
-	void CheckCircleVsRectangle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
+	void CheckCircleVsRectangle(const size_t indexA, const size_t indexB, Collision& collision);
 
-	void CheckCircleVsCircle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision);
+	void CheckCircleVsCircle(const size_t indexA, const size_t indexB, Collision& collision);
 
 	void ProjectVertices(const std::array<glm::vec2, 4>& vertices, const glm::vec2& axis, float& min, float& max);
 	void ProjectCircle(const glm::vec2& center, const float radius, const glm::vec2& axis, float& min, float& max);
 	glm::vec2 FindClosestPointOnRectangle(const glm::vec2& circleCenter, const std::array<glm::vec2, 4>& vertices);
 
 	// uses Separating Axis Theorem
-	bool CheckSAT(const std::array<glm::vec2, 4>& verticesA, const std::array<glm::vec2, 4>& verticesB, const std::shared_ptr<Collision>& collision);
-	bool CheckSAT(const glm::vec2& circleCenter, const float radius, const std::array<glm::vec2, 4>& vertices, const std::shared_ptr<Collision>& collision);
-	void GetDepthAndNormal(const float axisDepth, const glm::vec2& axis, const std::shared_ptr<Collision>& collision);
+	bool CheckSAT(const std::array<glm::vec2, 4>& verticesA, const std::array<glm::vec2, 4>& verticesB, Collision& collision);
+	bool CheckSAT(const glm::vec2& circleCenter, const float radius, const std::array<glm::vec2, 4>& vertices, Collision& collision);
+	void GetDepthAndNormal(const float axisDepth, const glm::vec2& axis, Collision& collision);
 
-	bool CheckCircles(const glm::vec2& centerA, const float radiusA, const glm::vec2& centerB, const float radiusB, const std::shared_ptr<Collision>& collision);
+	bool CheckCircles(const glm::vec2& centerA, const float radiusA, const glm::vec2& centerB, const float radiusB, Collision& collision);
 
 	bool RaycastAgainstBox(const std::shared_ptr<BoxCollider>& box, const glm::vec2& rayOrigin, const glm::vec2& rayEnd, const bool infiniteRay, RaycastHit& hitResult);
 	bool RaycastAgainstCircle(const std::shared_ptr<CircleCollider>& circle, const glm::vec2& rayOrigin, const glm::vec2& rayEnd, const bool infiniteRay, RaycastHit& hitResult);

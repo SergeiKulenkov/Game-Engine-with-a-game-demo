@@ -122,9 +122,9 @@ void Physics::QuadTreeCollisionDetection()
 				continue;
 			}
 
-			std::shared_ptr<Collision> collision = std::make_shared<Collision>();
+			Collision collision;
 			Collide(indexA, sharedColliderA->GetType(), foundId, sharedColliderB->GetType(), collision);
-			if (collision->detected) ResolveCollision(indexA, foundId, collision);
+			if (collision.detected) ResolveCollision(indexA, foundId, collision);
 		}
 	}
 }
@@ -152,17 +152,17 @@ void Physics::SimpleCollisionDetections()
 
 			if (CheckAABBOverlap(sharedColliderA->GetAABB(), sharedColliderB->GetAABB()))
 			{
-				std::shared_ptr<Collision> collision = std::make_shared<Collision>();
+				Collision collision;
 				Collide(indexA, sharedColliderA->GetType(), indexB, sharedColliderB->GetType(), collision);
-				if (collision->detected) ResolveCollision(indexA, indexB, collision);
+				if (collision.detected) ResolveCollision(indexA, indexB, collision);
 			}
 		}
 	}
 }
 
-bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult)
+bool Physics::Raycast(const Ray& ray, RaycastHit& hitResult)
 {
-	hitResult->contactPoint = glm::vec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
+	hitResult.contactPoint = glm::vec2(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
 	bool hasIntersected = false;
 	bool isIntersecting = false;
 	RaycastHit currentHitResult;
@@ -192,9 +192,9 @@ bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResu
 
 		if (isIntersecting)
 		{
-			if (!Vector::IsFirstPointCloser(ray.origin, hitResult->contactPoint, currentHitResult.contactPoint))
+			if (!Vector::IsFirstPointCloser(ray.origin, hitResult.contactPoint, currentHitResult.contactPoint))
 			{
-				hitResult->contactPoint = currentHitResult.contactPoint;
+				hitResult.contactPoint = currentHitResult.contactPoint;
 				resultIndex = i;
 				hasIntersected = true;
 			}
@@ -202,7 +202,7 @@ bool Physics::Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResu
 	}
 
 	// better to set entity once at the end, than multiple times inside the loop
-	if (hasIntersected) hitResult->entity = m_Colliders[resultIndex].lock()->GetEntity();
+	if (hasIntersected) hitResult.entity = m_Colliders[resultIndex].lock()->GetEntity();
 
 	return hasIntersected;
 }
@@ -273,7 +273,7 @@ bool Physics::RaycastAgainstCircle(const std::shared_ptr<CircleCollider>& circle
 	return isIntersecting;
 }
 
-void Physics::Collide(const size_t indexA, const ShapeType shapeA, const size_t indexB, const ShapeType shapeB, const std::shared_ptr<Collision>& collision)
+void Physics::Collide(const size_t indexA, const ShapeType shapeA, const size_t indexB, const ShapeType shapeB, Collision& collision)
 {
 	if (shapeA == ShapeType::Box)
 	{
@@ -299,7 +299,7 @@ void Physics::Collide(const size_t indexA, const ShapeType shapeA, const size_t 
 	}
 }
 
-void Physics::ResolveCollision(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
+void Physics::ResolveCollision(const size_t indexA, const size_t indexB, Collision& collision)
 {
 	const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
 	ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
@@ -310,58 +310,58 @@ void Physics::ResolveCollision(const size_t indexA, const size_t indexB, const s
 	{
 		const std::shared_ptr<Rigidbody> sharedRBA = m_Rigidbodies[sharedColliderA->GetRigidbodyId()].lock();
 		ASSERT_RIGIDBODY_SHARED_PTR(sharedRBA);
-		sharedRBA->MoveEntity(collision->normal * collision->depth * (-1.f));
+		sharedRBA->MoveEntity(collision.normal * collision.depth * (-1.f));
 
 		// if it's > 0 it means they're moving in the same direction
-		const float dot = glm::dot(-sharedRBA->GetLinearVelocity(), collision->normal);
+		const float dot = glm::dot(-sharedRBA->GetLinearVelocity(), collision.normal);
 		if (dot <= 0.f)
 		{
 			const float j = CalculateImpulseMagnitude(sharedRBA->GetRestitution(), dot, sharedRBA->GetInverseMass());
-			sharedRBA->GetLinearVelocity() -= sharedRBA->GetInverseMass() * j * collision->normal;
+			sharedRBA->GetLinearVelocity() -= sharedRBA->GetInverseMass() * j * collision.normal;
 		}
 
-		collision->entity = sharedColliderB->GetEntity();
+		collision.entity = sharedColliderB->GetEntity();
 		sharedColliderA->OnCollision(collision);
 	}
 	else if (sharedColliderB->IsDynamic() && !sharedColliderA->IsDynamic())
 	{
 		const std::shared_ptr<Rigidbody> sharedRBB = m_Rigidbodies[sharedColliderB->GetRigidbodyId()].lock();
 		ASSERT_RIGIDBODY_SHARED_PTR(sharedRBB);
-		sharedRBB->MoveEntity(collision->normal * collision->depth);
+		sharedRBB->MoveEntity(collision.normal * collision.depth);
 
-		const float dot = glm::dot(sharedRBB->GetLinearVelocity(), collision->normal);
+		const float dot = glm::dot(sharedRBB->GetLinearVelocity(), collision.normal);
 		if (dot <= 0.f)
 		{
 			const float j = CalculateImpulseMagnitude(sharedRBB->GetRestitution(), dot, sharedRBB->GetInverseMass());
-			sharedRBB->GetLinearVelocity() += sharedRBB->GetInverseMass() * j * collision->normal;
+			sharedRBB->GetLinearVelocity() += sharedRBB->GetInverseMass() * j * collision.normal;
 		}
 
-		collision->entity = sharedColliderA->GetEntity();
+		collision.entity = sharedColliderA->GetEntity();
 		sharedColliderB->OnCollision(collision);
 	}
 	else
 	{
-		std::shared_ptr<Collision> collisionB = std::make_shared<Collision>(*collision);
+		Collision collisionB = collision;
 		const std::shared_ptr<Rigidbody> sharedRBA = m_Rigidbodies[sharedColliderA->GetRigidbodyId()].lock();
 		ASSERT_RIGIDBODY_SHARED_PTR(sharedRBA);
 		const std::shared_ptr<Rigidbody> sharedRBB = m_Rigidbodies[sharedColliderB->GetRigidbodyId()].lock();
 		ASSERT_RIGIDBODY_SHARED_PTR(sharedRBB);
 
-		sharedRBA->MoveEntity(collision->normal * (collision->depth / 2.f) * (-1.f));
-		sharedRBB->MoveEntity(collisionB->normal * (collisionB->depth / 2.f));
+		sharedRBA->MoveEntity(collision.normal * (collision.depth / 2.f) * (-1.f));
+		sharedRBB->MoveEntity(collisionB.normal * (collisionB.depth / 2.f));
 
-		const float dot = glm::dot((sharedRBB->GetLinearVelocity() - sharedRBA->GetLinearVelocity()), collision->normal);
+		const float dot = glm::dot((sharedRBB->GetLinearVelocity() - sharedRBA->GetLinearVelocity()), collision.normal);
 		if (dot <= 0.f)
 		{
 			const float j = CalculateImpulseMagnitude(glm::min(sharedRBA->GetRestitution(), sharedRBB->GetRestitution()), dot, sharedRBA->GetInverseMass() + sharedRBB->GetInverseMass());
-			sharedRBA->GetLinearVelocity() -= sharedRBA->GetInverseMass() * j * collision->normal;
-			sharedRBB->GetLinearVelocity() += sharedRBA->GetInverseMass() * j * collision->normal;
+			sharedRBA->GetLinearVelocity() -= sharedRBA->GetInverseMass() * j * collision.normal;
+			sharedRBB->GetLinearVelocity() += sharedRBA->GetInverseMass() * j * collision.normal;
 		}
 
-		collision->entity = sharedColliderB->GetEntity();
+		collision.entity = sharedColliderB->GetEntity();
 		sharedColliderA->OnCollision(collision);
 
-		collisionB->entity = sharedColliderA->GetEntity();
+		collisionB.entity = sharedColliderA->GetEntity();
 		sharedColliderB->OnCollision(collisionB);
 	}
 }
@@ -384,7 +384,7 @@ bool Physics::CheckAABBOverlap(const AABB& boxA, const AABB& boxB)
 	return result;
 }
 
-void Physics::CheckRectangleVsRectangle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
+void Physics::CheckRectangleVsRectangle(const size_t indexA, const size_t indexB, Collision& collision)
 {
 	const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
 	ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
@@ -402,18 +402,18 @@ void Physics::CheckRectangleVsRectangle(const size_t indexA, const size_t indexB
 
 	if (collided)
 	{
-		collision->detected = true;
+		collision.detected = true;
 		const glm::vec2 positionA = rectangleA->GetPosition();
 		const glm::vec2 positionB = rectangleB->GetPosition();
 
-		if (glm::dot(positionB - positionA, collision->normal) < 0.f)
+		if (glm::dot(positionB - positionA, collision.normal) < 0.f)
 		{
-			collision->normal *= -1;
+			collision.normal *= -1;
 		}
 	}
 }
 
-void Physics::Physics::CheckCircleVsRectangle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
+void Physics::Physics::CheckCircleVsRectangle(const size_t indexA, const size_t indexB, Collision& collision)
 {
 	const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
 	ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
@@ -426,27 +426,27 @@ void Physics::Physics::CheckCircleVsRectangle(const size_t indexA, const size_t 
 	bool collided = CheckSAT(circle->GetPosition(), circle->GetRadius(), rectangle->GetVertices(), collision);
 	if (collided)
 	{
-		collision->detected = true;
+		collision.detected = true;
 		const glm::vec2 positionA = circle->GetPosition();
 		const glm::vec2 positionB = rectangle->GetPosition();
 		float dotProduct = 0.f;
 		if (indexA < indexB)
 		{
-			dotProduct = glm::dot(positionB - positionA, collision->normal);
+			dotProduct = glm::dot(positionB - positionA, collision.normal);
 		}
 		else
 		{
-			dotProduct = glm::dot(positionA - positionB, collision->normal);
+			dotProduct = glm::dot(positionA - positionB, collision.normal);
 		}
 
 		if (dotProduct < 0.f)
 		{
-			collision->normal *= -1;
+			collision.normal *= -1;
 		}
 	}
 }
 
-void Physics::Physics::CheckCircleVsCircle(const size_t indexA, const size_t indexB, const std::shared_ptr<Collision>& collision)
+void Physics::Physics::CheckCircleVsCircle(const size_t indexA, const size_t indexB, Collision& collision)
 {
 	const std::shared_ptr<Collider> sharedColliderA = m_Colliders[indexA].lock();
 	ASSERT_COLLIDER_SHARED_PTR(sharedColliderA);
@@ -461,7 +461,7 @@ void Physics::Physics::CheckCircleVsCircle(const size_t indexA, const size_t ind
 	const float radiusA = circleA->GetRadius();
 	const float radiusB = circleB->GetRadius();
 
-	collision->detected = CheckCircles(centerA, radiusA, centerB, radiusB, collision);
+	collision.detected = CheckCircles(centerA, radiusA, centerB, radiusB, collision);
 }
 
 void Physics::ProjectVertices(const std::array<glm::vec2, 4>& vertices, const glm::vec2& axis, float& min, float& max)
@@ -517,9 +517,9 @@ glm::vec2 Physics::FindClosestPointOnRectangle(const glm::vec2& circleCenter, co
 	return result;
 }
 
-bool Physics::CheckSAT(const std::array<glm::vec2, 4>& verticesA, const std::array<glm::vec2, 4>& verticesB, const std::shared_ptr<Collision>& collision)
+bool Physics::CheckSAT(const std::array<glm::vec2, 4>& verticesA, const std::array<glm::vec2, 4>& verticesB, Collision& collision)
 {
-	collision->depth = std::numeric_limits<float>::max();
+	collision.depth = std::numeric_limits<float>::max();
 	bool collided = true;
 
 	glm::vec2 axis = glm::vec2(0, 0);
@@ -549,9 +549,9 @@ bool Physics::CheckSAT(const std::array<glm::vec2, 4>& verticesA, const std::arr
 	return collided;
 }
 
-bool Physics::CheckSAT(const glm::vec2& circleCenter, const float radius, const std::array<glm::vec2, 4>& vertices, const std::shared_ptr<Collision>& collision)
+bool Physics::CheckSAT(const glm::vec2& circleCenter, const float radius, const std::array<glm::vec2, 4>& vertices, Collision& collision)
 {
-	collision->depth = std::numeric_limits<float>::max();
+	collision.depth = std::numeric_limits<float>::max();
 	bool collided = true;
 
 	glm::vec2 axis = glm::vec2(0, 0);
@@ -591,16 +591,16 @@ bool Physics::CheckSAT(const glm::vec2& circleCenter, const float radius, const 
 	return collided;
 }
 
-void Physics::GetDepthAndNormal(const float axisDepth, const glm::vec2& axis, const std::shared_ptr<Collision>& collision)
+void Physics::GetDepthAndNormal(const float axisDepth, const glm::vec2& axis, Collision& collision)
 {
-	if (axisDepth < collision->depth)
+	if (axisDepth < collision.depth)
 	{
-		collision->depth = axisDepth;
-		collision->normal = axis;
+		collision.depth = axisDepth;
+		collision.normal = axis;
 	}
 }
 
-bool Physics::CheckCircles(const glm::vec2& centerA, const float radiusA, const glm::vec2& centerB, const float radiusB, const std::shared_ptr<Collision>& collision)
+bool Physics::CheckCircles(const glm::vec2& centerA, const float radiusA, const glm::vec2& centerB, const float radiusB, Collision& collision)
 {
 	bool collided = false;
 
@@ -610,8 +610,8 @@ bool Physics::CheckCircles(const glm::vec2& centerA, const float radiusA, const 
 	if (distance < radiiSum)
 	{
 		collided = true;
-		collision->normal = glm::normalize(centerB - centerA);
-		collision->depth = radiiSum - distance;
+		collision.normal = glm::normalize(centerB - centerA);
+		collision.depth = radiiSum - distance;
 	}
 
 	return collided;

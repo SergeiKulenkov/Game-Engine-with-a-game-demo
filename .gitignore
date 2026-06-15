@@ -9,4 +9,4 @@
 *.slnx
 /GameDemo/imgui.ini
 /Vendor/premake/bin/
-Scripts/__pycache__
+/Scripts/__pycache__

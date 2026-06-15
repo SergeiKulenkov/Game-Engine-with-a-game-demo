@@ -70,8 +70,7 @@ namespace Vector
 	{
 		const float cos = glm::cos(angle);
 		const float sin = glm::sin(angle);
-		return glm::vec2(vector.x * cos - vector.y * sin,
-						vector.x * sin + vector.y * cos);
+		return Rotate(vector, cos, sin);
 	}
 
 	inline PairCosSin GetCosAndSinFromVector(const glm::vec2& vector)

@@ -10,16 +10,13 @@ EnvironmentManager::EnvironmentManager()
 
 void EnvironmentManager::OnInit()
 {
-	const std::shared_ptr<Scene> sharedScene = m_Scene.lock();
-	ASSERT_SCENE_SHARED_PTR(sharedScene);
-	const glm::vec2 screenSize = sharedScene->GetScreenSize();
-
+	const glm::vec2 screenSize = m_Scene->GetScreenSize();
 	std::shared_ptr<Entity> newEntity;
 	glm::vec2 position = glm::vec2(0.f, 0.f);
 
 	for (size_t i = 0; i < m_Boundaries.size(); i++)
 	{
-		newEntity = sharedScene->CreateEntity<Wall>();
+		newEntity = m_Scene->CreateEntity<Wall>();
 		const std::shared_ptr<Wall> newWall = std::dynamic_pointer_cast<Wall>(newEntity);
 
 		if (newWall != nullptr)
@@ -41,7 +38,7 @@ void EnvironmentManager::OnInit()
 
 	for (size_t i = 0; i < m_Obstacles.size(); i++)
 	{
-		newEntity = sharedScene->CreateEntity<Obstacle>();
+		newEntity = m_Scene->CreateEntity<Obstacle>();
 		const std::shared_ptr<Obstacle> newObstacle = std::dynamic_pointer_cast<Obstacle>(newEntity);
 
 		if (newObstacle != nullptr)

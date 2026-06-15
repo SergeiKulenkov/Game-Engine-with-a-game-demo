@@ -13,7 +13,7 @@ class Rigidbody;
 
 ////////////////////
 
-#define ASSERT_SCENE_SHARED_PTR(scene) assert(scene && "This Entity's reference to the Scene is null.");
+#define ASSERT_SCENE_NULLPTR(scene) assert(scene && "Scene's pointer is nillptr.");
 #define ASSERT_COMPONENT_PRESENT(present) assert(present && "This Component is already present.");
 #define ASSERT_COMPONENT_NOT_PRESENT(notPresent) assert(notPresent && "This Component is not present.");
 
@@ -26,7 +26,7 @@ class Entity : public std::enable_shared_from_this<Entity>
 {
 public:
 	Entity() {}
-	virtual ~Entity() {}
+	virtual ~Entity() { m_Scene = nullptr; }
 
 	template<ComponentType T>
 	std::shared_ptr<T> GetComponent()
@@ -79,7 +79,7 @@ protected:
 
 	virtual void Update(float deltaTime) {}
 
-	virtual void OnCollision(const std::shared_ptr<Collision>& other) {}
+	virtual void OnCollision(Collision& other) {}
 
 	// used for drawing debug primitives
 	// use Colour struct to select a colour or convert to uint32_t
@@ -95,12 +95,12 @@ protected:
 
 	size_t m_Id = 0;
 
-	std::weak_ptr<Scene> m_Scene;
+	Scene* m_Scene = nullptr;
 
 	std::unordered_map<size_t, std::shared_ptr<Component>> m_Components;
 
 private:
-	void Init(const size_t id, const std::shared_ptr<Scene>& scene);
+	void Init(const size_t id, Scene* scene);
 
 	////////////////////
 

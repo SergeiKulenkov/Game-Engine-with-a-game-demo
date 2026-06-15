@@ -53,7 +53,7 @@ struct RendererDebug
 
 ////////////////////
 
-class Scene : public std::enable_shared_from_this<Scene>
+class Scene
 {
 public:
 	virtual ~Scene();
@@ -65,7 +65,7 @@ public:
 	{
 		const size_t id = m_Entities.size();
 		m_Entities.emplace(id, std::make_shared<T>());
-		m_Entities.at(id)->Init(id, shared_from_this());
+		m_Entities.at(id)->Init(id, this);
 
 		return m_Entities.at(id);
 	}
@@ -74,13 +74,15 @@ public:
 	// because Scene owns entities, deleting them some other way won't work
 	void DestroyEntity(const size_t id);
 
-	bool Raycast(const Ray& ray, const std::shared_ptr<RaycastHit>& hitResult) { return m_Physics.Raycast(ray, hitResult); }
-	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, const std::shared_ptr<RaycastHit>& hitResult) { return m_Physics.Raycast(origin, direction, length, hitResult); }
+	bool Raycast(const Ray& ray, RaycastHit& hitResult) { return m_Physics.Raycast(ray, hitResult); }
+	bool Raycast(const glm::vec2& origin, const glm::vec2& direction, const float length, RaycastHit& hitResult) { return m_Physics.Raycast(origin, direction, length, hitResult); }
 
 	glm::vec2 GetScreenSize() const;
 
 	void RegisterEditableDebugWindowField(const std::string& name, float* value, float max = 10.f, float min = 0.f, const uint8_t numberOfFractionalDigits = 1);
 	void RegisterDebugWindowField(const std::string& name, float* value, const uint8_t numberOfFractionalDigits = 1);
+	void RegisterEditableFieldInteger(const std::string& name, int* value, int max = 10.f, int min = 0.f);
+	void RegisterFieldInteger(const std::string& name, int* value);
 	void RegisterCheckbox(const std::string_view& name, bool* activated);
 	void RegisterRadioButton(const std::string_view& sectionTitle, uint8_t* activatedIndex, const std::vector<std::string_view>& labels);
 

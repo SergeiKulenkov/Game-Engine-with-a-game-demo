@@ -17,7 +17,7 @@ enum DrawDebugChoice : uint8_t
 	None = 0,
 	Circle,
 	Raycast,
-	Max,
+	Count,
 };
 
 ////////////////////
@@ -35,7 +35,7 @@ protected:
 
 	virtual void DrawDebug(const RendererDebug& rendererDebug) override;
 
-	virtual void OnCollision(const std::shared_ptr<Collision>& other) override;
+	virtual void OnCollision(Collision& other) override;
 
 private:
 	glm::vec2 GetMovementInput() const;
@@ -59,7 +59,7 @@ private:
 	// debug things
 	static constexpr float raycastOffset = 20.f;
 	static constexpr float raycastLength = 100.f;
-	static constexpr std::array<std::string_view, 3> labels = { "None", "Circle", "Raycast" };
+	static constexpr std::array<std::string_view, static_cast<uint8_t>(DrawDebugChoice::Count)> labels = {"None", "Circle", "Raycast"};
 	static constexpr std::string_view maxSpeedField = "Player's Max Speed";
 	static constexpr std::string_view currentSpeedField = "Player's Current Speed";
 	static constexpr std::string_view allowInputField = "Allow input";
