@@ -79,10 +79,10 @@ public:
 
 	glm::vec2 GetScreenSize() const;
 
-	void RegisterEditableDebugWindowField(const std::string& name, float* value, float max = 10.f, float min = 0.f, const uint8_t numberOfFractionalDigits = 1);
-	void RegisterDebugWindowField(const std::string& name, float* value, const uint8_t numberOfFractionalDigits = 1);
-	void RegisterEditableFieldInteger(const std::string& name, int* value, int max = 10.f, int min = 0.f);
-	void RegisterFieldInteger(const std::string& name, int* value);
+	void RegisterEditableDebugFieldFloat(const std::string& name, float* value, float max = 10.f, float min = 0.f, const uint8_t numberOfFractionalDigits = 1);
+	void RegisterDebugFieldFloat(const std::string& name, float* value, const uint8_t numberOfFractionalDigits = 1);
+	void RegisterEditableDebugFieldInteger(const std::string& name, int* value, int max = 10.f, int min = 0.f);
+	void RegisterDebugFieldInteger(const std::string& name, int* value);
 	void RegisterCheckbox(const std::string_view& name, bool* activated);
 	void RegisterRadioButton(const std::string_view& sectionTitle, uint8_t* activatedIndex, const std::vector<std::string_view>& labels);
 

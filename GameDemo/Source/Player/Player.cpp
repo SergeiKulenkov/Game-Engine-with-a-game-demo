@@ -26,8 +26,8 @@ void Player::OnInit()
 
 	// testing debug window
 	ASSERT_SCENE_NULLPTR(m_Scene);
-	m_Scene->RegisterEditableDebugWindowField(maxSpeedField.data(), &m_MaxSpeed, maxSpeedLimit, 0.f);
-	m_Scene->RegisterDebugWindowField(currentSpeedField.data(), &m_Speed);
+	m_Scene->RegisterEditableDebugFieldFloat(maxSpeedField.data(), &m_MaxSpeed, maxSpeedLimit, 0.f);
+	m_Scene->RegisterDebugFieldFloat(currentSpeedField.data(), &m_Speed);
 	m_Scene->RegisterCheckbox(allowInputField, &m_AllowInput);
 	m_Scene->RegisterRadioButton(debugChoiceField, (uint8_t*)(&m_DebugChoice), std::vector(labels.begin(), labels.end()));
 }

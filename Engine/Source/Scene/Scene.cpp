@@ -21,7 +21,7 @@ void Scene::Start(bool displayDebugWindow)
 	if (displayDebugWindow)
 	{
 		m_DebugWindow = std::make_unique<DebugWindow>();
-		RegisterDebugWindowField("Frame Time, ms", &m_FrameTime, 3);
+		RegisterDebugFieldFloat("Frame Time, ms", &m_FrameTime, 3);
 	}
 }
 
@@ -87,22 +87,22 @@ glm::vec2 Scene::GetScreenSize() const
 	return size;
 }
 
-void Scene::RegisterEditableDebugWindowField(const std::string& name, float* value, float max, float min, const uint8_t numberOfFractionalDigits)
+void Scene::RegisterEditableDebugFieldFloat(const std::string& name, float* value, float max, float min, const uint8_t numberOfFractionalDigits)
 {
 	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterEditableFieldFloat(name, value, max, min, numberOfFractionalDigits);
 }
 
-void Scene::RegisterDebugWindowField(const std::string& name, float* value, const uint8_t numberOfFractionalDigits)
+void Scene::RegisterDebugFieldFloat(const std::string& name, float* value, const uint8_t numberOfFractionalDigits)
 {
 	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterFieldFloat(name, value, numberOfFractionalDigits);
 }
 
-void Scene::RegisterEditableFieldInteger(const std::string& name, int* value, int max, int min)
+void Scene::RegisterEditableDebugFieldInteger(const std::string& name, int* value, int max, int min)
 {
 	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterEditableFieldInteger(name, value, max, min);
 }
 
-void Scene::RegisterFieldInteger(const std::string& name, int* value)
+void Scene::RegisterDebugFieldInteger(const std::string& name, int* value)
 {
 	if (m_DebugWindow != nullptr) m_DebugWindow->RegisterFieldInteger(name, value);
 }
