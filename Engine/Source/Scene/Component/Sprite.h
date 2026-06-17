@@ -50,7 +50,7 @@ protected:
 private:
 	void UpdateImageQuad()
 	{
-		const std::shared_ptr tranform = m_TransformData.lock();
+		const std::shared_ptr<TransformData> tranform = m_TransformData.lock();
 		ASSERT_TRANSFORM_SHARED_PTR(tranform);
 		m_ImageQuadPositions[0] = ImVec2(tranform->position.x - m_HalfSize.x, tranform->position.y - m_HalfSize.y);
 		m_ImageQuadPositions[1] = ImVec2(tranform->position.x + m_HalfSize.x, tranform->position.y - m_HalfSize.y);
@@ -60,7 +60,7 @@ private:
 
 	void RotateImageQuad()
 	{
-		const std::shared_ptr tranform = m_TransformData.lock();
+		const std::shared_ptr<TransformData> tranform = m_TransformData.lock();
 		ASSERT_TRANSFORM_SHARED_PTR(tranform);
 		const PairCosSin pairCosSin = Vector::GetCosAndSinFromVector(tranform->rotation);
 		glm::vec2 rotated = glm::vec2(0.f, 0.f);

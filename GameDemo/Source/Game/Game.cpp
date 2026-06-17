@@ -42,6 +42,6 @@ void Game::Start()
 #else
 	m_Scene->Start(false);
 #endif
-	m_Scene->CreateEntity<Player>();
 	m_Scene->CreateEntity<EnvironmentManager>();
+	m_Scene->CreateEntity<Player>();
 }

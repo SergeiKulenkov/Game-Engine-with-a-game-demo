@@ -42,10 +42,8 @@ private:
 
 	////////////////////
 
-	static constexpr std::string_view defaultTag = "Player";
 	static constexpr std::string_view spritePath = "../Assets/bee.png";
 	static constexpr glm::vec2 defaultPosition = glm::vec2(500.f, 300.f);
-	static constexpr float colliderSize = 14.f;
 
 	static constexpr float acceleration = 2.75f;
 	static constexpr float deceleration = 2.15f;
@@ -57,7 +55,7 @@ private:
 	static constexpr float rotationRate = 3.5f;
 
 	// debug things
-	static constexpr float raycastOffset = 20.f;
+	static constexpr float raycastOffset = 25.f;
 	static constexpr float raycastLength = 100.f;
 	static constexpr std::array<std::string_view, static_cast<uint8_t>(DrawDebugChoice::Count)> labels = {"None", "Circle", "Raycast"};
 	static constexpr std::string_view maxSpeedField = "Player's Max Speed";

@@ -85,7 +85,7 @@ public:
 				{
 					if (m_Children[i] == nullptr)
 					{
-						m_Children[i] = std::make_shared<QuadTree<IndexType>>(childArea, m_Depth + 1);
+						m_Children[i] = std::make_unique<QuadTree<IndexType>>(childArea, m_Depth + 1);
 					}
 
 					m_Children[i]->Insert(element, area);
@@ -234,7 +234,7 @@ private:
 
 	Area m_Area;
 
-	std::array<std::shared_ptr<QuadTree<IndexType>>, quadCount> m_Children{};
+	std::array<std::unique_ptr<QuadTree<IndexType>>, quadCount> m_Children{};
 
 	std::vector<std::pair<Area, IndexType>> m_Elements;
 };

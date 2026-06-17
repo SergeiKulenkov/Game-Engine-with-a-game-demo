@@ -18,10 +18,10 @@
 void Player::OnInit()
 {
 	m_Transform = AddComponent<Transform>(defaultPosition)->GetTransformData();
-	AddComponent<Tag>(defaultTag.data());
-	AddComponent<Sprite>(spritePath);
+	const glm::vec2 size = AddComponent<Sprite>(spritePath)->GetSize();
 	
-	AddComponent<CircleCollider>(colliderSize);
+	const float radius = glm::min(size.x, size.y) / 2.f;
+	AddComponent<CircleCollider>(radius);
 	m_Rigidbody = AddComponent<Rigidbody>(1.f, linearDamping, restitution);
 
 	// testing debug window
