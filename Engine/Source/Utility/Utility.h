@@ -1,5 +1,8 @@
 #pragma once
 #include <random>
+#include <iostream>
+#include <string_view>
+#include <format>
 
 #include <glm/glm.hpp>
 
@@ -66,6 +69,7 @@ namespace Vector
 						vector.x * pairCosSin.sin + vector.y * pairCosSin.cos);
 	}
 
+	// angle in radians
 	inline glm::vec2 Rotate(const glm::vec2& vector, const float angle)
 	{
 		const float cos = glm::cos(angle);
@@ -92,5 +96,15 @@ namespace Vector
 	{
 		const glm::vec2 positionDiff = positionA - positionB;
 		return glm::dot(positionDiff, positionDiff) < (distance * distance);
+	}
+}
+
+namespace Debug
+{
+	// message = "x = {}, y = {}"
+	template<typename... Args>
+	inline void Log(const std::string_view& message, Args... args)
+	{
+		std::cout << std::vformat(message, std::make_format_args(args...)) << '\n';
 	}
 }

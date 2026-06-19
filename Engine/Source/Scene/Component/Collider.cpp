@@ -9,25 +9,22 @@
 
 void Collider::OnInit()
 {
-	const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-	ASSERT_ENTITY_SHARED_PTR(sharedEntity);
-
 	// Entity must have a Transform to use a Collider
-	ASSERRT_HAS_TRANSFORM(sharedEntity->HasComponent<Transform>());
-	m_TransformData = sharedEntity->GetComponent<Transform>()->GetTransformData();
+	ASSERT_ENTITY_NULLPTR(m_Entity);
+	ASSERRT_HAS_TRANSFORM(m_Entity->HasComponent<Transform>());
+	m_TransformData = m_Entity->GetComponent<Transform>()->GetTransformData();
 
 	if (!m_IsDynamic)
 	{
-		if (sharedEntity->HasComponent<Rigidbody>()) m_IsDynamic = true;
+		if (m_Entity->HasComponent<Rigidbody>()) m_IsDynamic = true;
 		else m_AABB = GetAABB();
 	}
 }
 
 void Collider::OnRemove()
 {
-	const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-	ASSERT_ENTITY_SHARED_PTR(sharedEntity);
-	sharedEntity->UnregisterCollider(m_Id);
+	ASSERT_ENTITY_NULLPTR(m_Entity);
+	m_Entity->UnregisterCollider(m_Id);
 }
 
 void Collider::SetDynamic(bool isDynamic)
@@ -38,9 +35,8 @@ void Collider::SetDynamic(bool isDynamic)
 
 void Collider::RegisterCollider(const size_t colliderType)
 {
-	const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-	ASSERT_ENTITY_SHARED_PTR(sharedEntity);
-	m_Id = sharedEntity->RegisterCollider(colliderType);
+	ASSERT_ENTITY_NULLPTR(m_Entity);
+	m_Id = m_Entity->RegisterCollider(colliderType);
 }
 
 size_t Collider::GetRigidbodyId() const

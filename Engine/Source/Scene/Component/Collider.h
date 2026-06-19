@@ -48,13 +48,7 @@ public:
 	virtual void OnCollision(Collision& other)
 	{
 		m_HasCollided = true;
-
-		if (!m_Entity.expired())
-		{
-			const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-			ASSERT_ENTITY_SHARED_PTR(sharedEntity);
-			sharedEntity->OnCollision(other);
-		}
+		m_Entity->OnCollision(other);
 	}
 
 	bool IsDynamic() const { return m_IsDynamic; }

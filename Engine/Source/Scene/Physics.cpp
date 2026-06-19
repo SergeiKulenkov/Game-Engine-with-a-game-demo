@@ -361,8 +361,11 @@ void Physics::ResolveCollision(const size_t indexA, const size_t indexB, Collisi
 		collision.entity = sharedColliderB->GetEntity();
 		sharedColliderA->OnCollision(collision);
 
-		collisionB.entity = sharedColliderA->GetEntity();
-		sharedColliderB->OnCollision(collisionB);
+		if (sharedColliderA.use_count() != 1)
+		{
+			collisionB.entity = sharedColliderA->GetEntity();
+			sharedColliderB->OnCollision(collisionB);
+		}
 	}
 }
 

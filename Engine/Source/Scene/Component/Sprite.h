@@ -38,11 +38,10 @@ public:
 protected:
 	virtual void OnInit() override
 	{
-		const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
 		// Entity must have a Transform to render a Sprite
-		ASSERT_ENTITY_SHARED_PTR(sharedEntity);
-		ASSERRT_HAS_TRANSFORM(sharedEntity->HasComponent<Transform>());
-		m_TransformData = sharedEntity->GetComponent<Transform>()->GetTransformData();
+		ASSERT_ENTITY_NULLPTR(m_Entity);
+		ASSERRT_HAS_TRANSFORM(m_Entity->HasComponent<Transform>());
+		m_TransformData = m_Entity->GetComponent<Transform>()->GetTransformData();
 	}
 
 	virtual void OnRemove() {}

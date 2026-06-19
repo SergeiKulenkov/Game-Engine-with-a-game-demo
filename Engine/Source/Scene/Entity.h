@@ -45,6 +45,8 @@ public:
 
 	size_t GetId() const { return m_Id; }
 
+	std::weak_ptr<Entity> GetWeakPointer() { return weak_from_this(); }
+
 protected:
 	template<ComponentType T, typename... Args>
 	std::shared_ptr<T> AddComponent(Args&&... args)
@@ -53,7 +55,7 @@ protected:
 
 		const size_t id = typeid(T).hash_code();
 		m_Components.emplace(id, std::make_shared<T>(std::forward<Args>(args)...));
-		m_Components.at(id)->m_Entity = shared_from_this();
+		m_Components.at(id)->m_Entity = this;
 		m_Components.at(id)->OnInit();
 
 		return std::dynamic_pointer_cast<T>(m_Components.at(id));

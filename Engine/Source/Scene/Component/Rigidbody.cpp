@@ -45,12 +45,11 @@ void Rigidbody::RotateEntity(const float amount)
 
 void Rigidbody::OnInit()
 {
-	const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-	ASSERT_ENTITY_SHARED_PTR(sharedEntity);
-	m_Id = sharedEntity->RegisterRigidbody();
+	ASSERT_ENTITY_NULLPTR(m_Entity);
+	m_Id = m_Entity->RegisterRigidbody();
 
-	ASSERRT_HAS_TRANSFORM(sharedEntity->HasComponent<Transform>());
-	m_TransformData = sharedEntity->GetComponent<Transform>()->GetTransformData();
+	ASSERRT_HAS_TRANSFORM(m_Entity->HasComponent<Transform>());
+	m_TransformData = m_Entity->GetComponent<Transform>()->GetTransformData();
 
 	std::shared_ptr<Collider> collider = GetCollider();
 	collider->SetRigidbodyId(m_Id);
@@ -71,16 +70,15 @@ void Rigidbody::ResetId(const size_t id)
 std::shared_ptr<Collider> Rigidbody::GetCollider()
 {
 	std::shared_ptr<Collider> collider;
-	const std::shared_ptr<Entity> sharedEntity = m_Entity.lock();
-	ASSERT_ENTITY_SHARED_PTR(sharedEntity);
+	ASSERT_ENTITY_NULLPTR(m_Entity);
 
-	if (sharedEntity->HasComponent<BoxCollider>())
+	if (m_Entity->HasComponent<BoxCollider>())
 	{
-		collider = sharedEntity->GetComponent<BoxCollider>();
+		collider = m_Entity->GetComponent<BoxCollider>();
 	}
-	else if (sharedEntity->HasComponent<CircleCollider>())
+	else if (m_Entity->HasComponent<CircleCollider>())
 	{
-		collider = sharedEntity->GetComponent<CircleCollider>();
+		collider = m_Entity->GetComponent<CircleCollider>();
 	}
 
 	return collider;

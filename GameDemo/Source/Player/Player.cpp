@@ -65,6 +65,7 @@ void Player::Update(float deltaTime)
 
 void Player::OnCollision(Collision& other)
 {
+	Debug::Log("x = {}, y = {}", other.contact.x, other.contact.y);
 	m_Speed = 0.f;
 
 	if (!other.entity.expired())
