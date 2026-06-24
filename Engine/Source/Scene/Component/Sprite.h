@@ -8,7 +8,7 @@
 
 #include "Component.h"
 #include "Transform.h"
-#include "../../Image/Image.h"
+#include "../../Renderer/Image.h"
 #include "../../Utility/Utility.h"
 
 ////////////////////
@@ -29,6 +29,10 @@ public:
 		UpdateImageQuad();
 		RotateImageQuad();
 
+		// TODO: pass to the Renderer
+		// through a Renderer* which can be passed here instead of the drawList??
+		// but the Scene probably doesn't need the Renderer
+		// or the Scene can pass Sprites to the Renderer which sounds less performant
 		drawList.AddImageQuad((ImTextureID)m_Image->GetDescriptorSet(), m_ImageQuadPositions[0], m_ImageQuadPositions[1], m_ImageQuadPositions[2], m_ImageQuadPositions[3],
 			m_ImageQuadUVs[0], m_ImageQuadUVs[1], m_ImageQuadUVs[2], m_ImageQuadUVs[3]);
 	}
