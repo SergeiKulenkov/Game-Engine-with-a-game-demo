@@ -10,8 +10,11 @@
 #include "../Scene/Scene.h"
 
 struct GLFWwindow;
+class Renderer;
 
 void check_vk_result(VkResult err);
+
+VkDevice GetDevice();
 
 ////////////////////
 
@@ -60,4 +63,6 @@ private:
 	GLFWwindow* m_Window = nullptr;
 
 	std::shared_ptr<Scene> m_Scene = nullptr;
+
+	Renderer m_Renderer;
 };
