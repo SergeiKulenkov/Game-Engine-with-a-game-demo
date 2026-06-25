@@ -1,5 +1,6 @@
 #include "Engine.h"
 #include "../Utility/Timer.h"
+#include "../Renderer/Renderer.h"
 
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
@@ -48,6 +49,11 @@ void check_vk_result(VkResult err)
     fprintf(stderr, "[vulkan] Error: VkResult = %d\n", err);
     if (err < 0)
         abort();
+}
+
+VkDevice GetDevice()
+{
+    return g_Device;
 }
 
 static void glfw_error_callback(int error, const char* description)
@@ -297,7 +303,7 @@ static void CleanupVulkanWindow()
     }
 }
 
-static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
+static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data, Renderer& renderer, const Scene& scene)
 {
     VkResult err;
 
@@ -357,6 +363,8 @@ static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data)
         vkCmdBeginRenderPass(fd->CommandBuffer, &info, VK_SUBPASS_CONTENTS_INLINE);
     }
 
+    renderer.Render(scene);
+
     // Record dear imgui primitives into command buffer
     ImGui_ImplVulkan_RenderDrawData(draw_data, fd->CommandBuffer);
 
@@ -408,6 +416,7 @@ static void FramePresent(ImGui_ImplVulkanH_Window* wd)
 Engine::Engine(std::string_view name, const uint16_t width, const uint16_t height)
 {
     Init(name, width, height);
+    m_Renderer.Init();
 }
 
 Engine::~Engine()
@@ -548,6 +557,7 @@ void Engine::RunScene()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+        // TODO: remove
         m_Scene->Render();
 
         {
@@ -561,7 +571,7 @@ void Engine::RunScene()
                 wd->ClearValue.color.float32[1] = clearColour.y * clearColour.w;
                 wd->ClearValue.color.float32[2] = clearColour.z * clearColour.w;
                 wd->ClearValue.color.float32[3] = clearColour.w;
-                FrameRender(wd, draw_data);
+                FrameRender(wd, draw_data, m_Renderer, *m_Scene);
                 FramePresent(wd);
             }
         }
