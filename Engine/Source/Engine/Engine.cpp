@@ -1,6 +1,5 @@
 #include "Engine.h"
 #include "../Utility/Timer.h"
-#include "../Renderer/Renderer.h"
 
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_vulkan.h>
@@ -32,6 +31,7 @@ static VkQueue                  g_Queue = VK_NULL_HANDLE;
 static VkDebugReportCallbackEXT g_DebugReport = VK_NULL_HANDLE;
 static VkPipelineCache          g_PipelineCache = VK_NULL_HANDLE;
 static VkDescriptorPool         g_DescriptorPool = VK_NULL_HANDLE;
+static VkCommandBuffer          g_ActiveCommandBuffer = nullptr;
 
 static ImGui_ImplVulkanH_Window g_MainWindowData;
 static int                      g_MinImageCount = 2;
@@ -51,9 +51,9 @@ void check_vk_result(VkResult err)
         abort();
 }
 
-VkDevice GetDevice()
+ImGui_ImplVulkanH_Window* GetWindowData()
 {
-    return g_Device;
+    return &g_MainWindowData;
 }
 
 static void glfw_error_callback(int error, const char* description)
@@ -349,6 +349,7 @@ static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data, Ren
         info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
         info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         err = vkBeginCommandBuffer(fd->CommandBuffer, &info);
+        g_ActiveCommandBuffer = fd->CommandBuffer;
         check_vk_result(err);
     }
     {
@@ -383,6 +384,7 @@ static void FrameRender(ImGui_ImplVulkanH_Window* wd, ImDrawData* draw_data, Ren
         info.pSignalSemaphores = &render_complete_semaphore;
 
         err = vkEndCommandBuffer(fd->CommandBuffer);
+        g_ActiveCommandBuffer = nullptr;
         check_vk_result(err);
         err = vkQueueSubmit(g_Queue, 1, &info, fd->Fence);
         check_vk_result(err);
@@ -597,6 +599,11 @@ VkPhysicalDevice Engine::GetPhysicalDevice()
 VkDevice Engine::GetDevice()
 {
     return g_Device;
+}
+
+VkCommandBuffer Engine::GetActiveCommandBuffer()
+{
+    return g_ActiveCommandBuffer;
 }
 
 VkCommandBuffer Engine::GetCommandBuffer(bool begin)

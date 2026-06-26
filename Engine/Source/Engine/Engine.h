@@ -6,15 +6,16 @@
 
 #include <vulkan/vulkan.h>
 #include <imgui.h>
+#include <imgui_impl_vulkan.h>
 
 #include "../Scene/Scene.h"
+#include "../Renderer/Renderer.h"
 
 struct GLFWwindow;
-class Renderer;
 
 void check_vk_result(VkResult err);
 
-VkDevice GetDevice();
+ImGui_ImplVulkanH_Window* GetWindowData();
 
 ////////////////////
 
@@ -38,6 +39,7 @@ public:
 	static VkInstance GetInstance();
 	static VkPhysicalDevice GetPhysicalDevice();
 	static VkDevice GetDevice();
+	static VkCommandBuffer GetActiveCommandBuffer();
 
 	static VkCommandBuffer GetCommandBuffer(bool begin);
 	static void FlushCommandBuffer(VkCommandBuffer commandBuffer);
