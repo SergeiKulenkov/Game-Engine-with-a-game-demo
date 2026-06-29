@@ -2,6 +2,7 @@
 #include <string_view>
 #include <string>
 #include <filesystem>
+#include <vector>
 
 #include "glm/glm.hpp"
 #include "vulkan/vulkan.h"
@@ -23,8 +24,9 @@ struct Buffer
 
 struct PushConstants
 {
-	glm::mat4 ViewProjection = glm::mat4();
-	glm::mat4 Transform = glm::mat4();
+	//glm::mat4 ViewProjection = glm::mat4();
+	//glm::mat4 Transform = glm::mat4();
+	glm::vec2 Transform = glm::vec2();
 };
 
 ////////////////////
@@ -35,6 +37,7 @@ public:
 	void Render(const Scene& scene);
 
 	void RenderTriangle();
+	void RenderRectangle();
 
 	// move drawing primitives and images here
 	// leave UI windows for imgui
@@ -45,7 +48,9 @@ private:
 
 	void Init();
 	void InitPipeline();
-	void InitBuffers();
+	void InitBuffers(const std::vector<glm::vec2>& vertices, const std::vector<uint16_t>& indices);
+
+	void Shutdown();
 
 	void CreateOrResizeBuffer(Buffer& buffer, uint64_t newSize);
 

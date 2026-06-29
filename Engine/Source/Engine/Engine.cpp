@@ -508,6 +508,7 @@ void Engine::Shutdown()
     }
     s_ResourceFreeQueue.clear();
 
+    m_Renderer.Shutdown();
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();

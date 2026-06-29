@@ -33,8 +33,17 @@ static uint32_t GetMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bi
 
 void Renderer::Init()
 {
-	InitBuffers();
 	InitPipeline();
+
+	// TODO: remove after fixing the device lost error
+	const std::vector<glm::vec2> vertices = {
+			glm::vec2(-0.5f, -0.5f),
+			glm::vec2(-0.5f,  0.5f),
+			glm::vec2(0.5f,  0.5f),
+			glm::vec2(0.5f, -0.5f),
+	};
+	const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
+	InitBuffers(vertices, indices);
 }
 
 void Renderer::InitPipeline()
@@ -44,7 +53,7 @@ void Renderer::InitPipeline()
 
 	VkPushConstantRange pushConstantRange;
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(glm::mat4) * 2;
+	pushConstantRange.size = sizeof(PushConstants);
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 	VkPipelineLayoutCreateInfo layout_info{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
@@ -63,7 +72,7 @@ void Renderer::InitPipeline()
 	VkVertexInputAttributeDescription attribute_descriptions;
 	attribute_descriptions.location = 0;
 	attribute_descriptions.binding = binding_description.binding;
-	attribute_descriptions.format = VK_FORMAT_R32G32B32_SFLOAT;
+	attribute_descriptions.format = VK_FORMAT_R32G32_SFLOAT;
 	attribute_descriptions.offset = 0;
 
 	VkPipelineVertexInputStateCreateInfo vertex_input{ VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
@@ -129,29 +138,25 @@ void Renderer::InitPipeline()
 	vkDestroyShaderModule(device, shader_stages[1].module, nullptr);
 }
 
-void Renderer::InitBuffers()
+void Renderer::InitBuffers(const std::vector<glm::vec2>& vertices, const std::vector<uint16_t>& indices)
 {
 	VkDevice device = Engine::GetDevice();
+	uint64_t verticesMemory = sizeof(glm::vec2) * vertices.size();
+	uint64_t indicesMemory = sizeof(uint16_t) * indices.size();
 
-	glm::vec2 vertexData[3] = {
-			glm::vec2(-0.5f, -0.5f),
-			glm::vec2( 0.0f,  0.5f),
-			glm::vec2( 0.5f, -0.5f)
-	};
 	m_VertexBuffer.Usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	CreateOrResizeBuffer(m_VertexBuffer, sizeof(vertexData));
+	CreateOrResizeBuffer(m_VertexBuffer, verticesMemory);
 
 	m_IndexBuffer.Usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	uint32_t indices[3] = { 0, 1, 2 };
-	CreateOrResizeBuffer(m_IndexBuffer, sizeof(indices));
+	CreateOrResizeBuffer(m_IndexBuffer, indicesMemory);
 
-	glm::vec3* vbMemory;
-	check_vk_result(vkMapMemory(device, m_VertexBuffer.Memory, 0, sizeof(vertexData), 0, (void**)&vbMemory));
-	memcpy(vbMemory, vertexData, sizeof(vertexData));
+	glm::vec2* vbMemory;
+	check_vk_result(vkMapMemory(device, m_VertexBuffer.Memory, 0, verticesMemory, 0, (void**)&vbMemory));
+	memcpy(vbMemory, vertices.data(), static_cast<size_t>(verticesMemory));
 
-	uint32_t* ibMemory;
-	check_vk_result(vkMapMemory(device, m_IndexBuffer.Memory, 0, sizeof(indices), 0, (void**)&ibMemory));
-	memcpy(ibMemory, indices, sizeof(indices));
+	uint16_t* ibMemory;
+	check_vk_result(vkMapMemory(device, m_IndexBuffer.Memory, 0, indicesMemory, 0, (void**)&ibMemory));
+	memcpy(ibMemory, indices.data(), static_cast<size_t>(indicesMemory));
 
 	VkMappedMemoryRange range[2] = {};
 	range[0].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -164,6 +169,19 @@ void Renderer::InitBuffers()
 	check_vk_result(vkFlushMappedMemoryRanges(device, 2, range));
 	vkUnmapMemory(device, m_VertexBuffer.Memory);
 	vkUnmapMemory(device, m_IndexBuffer.Memory);
+}
+
+void Renderer::Shutdown()
+{
+	VkDevice device = Engine::GetDevice();
+	vkDestroyPipeline(device, m_Pipeline, nullptr);
+	vkDestroyPipelineLayout(device, m_Layout, nullptr);
+
+	vkDestroyBuffer(device, m_VertexBuffer.Handle, nullptr);
+	vkFreeMemory(device, m_VertexBuffer.Memory, nullptr);
+
+	vkDestroyBuffer(device, m_IndexBuffer.Handle, nullptr);
+	vkFreeMemory(device, m_IndexBuffer.Memory, nullptr);
 }
 
 void Renderer::CreateOrResizeBuffer(Buffer& buffer, uint64_t newSize)
@@ -228,7 +246,17 @@ VkShaderModule Renderer::LoadShaderModule(const std::filesystem::path& path)
 
 void Renderer::Render(const Scene& scene)
 {
-	RenderTriangle();
+	// seems like imgui maps all objects into one buffer
+	// in ImGui_ImplVulkan_RenderDrawData():
+	// align buffer size for both vertex and index buffers
+	// Create of resize for both
+	// map memory, memcpy using the draw lists, flush, unmap
+	// then ImGui_ImplVulkan_SetupRenderState() does vk cmd bind buffers and vk cmd set viewport
+	// and vk cmd push constants and vk cmd bind descriptor sets
+	// then a loop through all draw lists with vk cmd set scissor and finally vk cmd draw indexed
+
+	//RenderTriangle();
+	RenderRectangle();
 
 	// get entities from Scene? or get Sprites from Scene?
 	// what about drawing debug primitives? then get all entities to pass this* to them?
@@ -238,16 +266,24 @@ void Renderer::Render(const Scene& scene)
 
 void Renderer::RenderTriangle()
 {
+	const std::vector<glm::vec2> vertices = {
+			glm::vec2(-0.5f, -0.5f),
+			glm::vec2( 0.0f,  0.5f),
+			glm::vec2( 0.5f, -0.5f)
+	};
+	const std::vector<uint16_t> indices = { 0, 1, 2 };
+	InitBuffers(vertices, indices);
+
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	auto windowData = GetWindowData();
 
-	float viewportWidth = (float)windowData->Width;
-	float viewportHeight = (float)windowData->Height;
+	float viewportWidth = static_cast<float>(windowData->Width);
+	float viewportHeight = static_cast<float>(windowData->Height);
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
 	VkDeviceSize offset{ 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.Handle, &offset);
-	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.Handle, offset, VK_INDEX_TYPE_UINT32);
+	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.Handle, offset, VK_INDEX_TYPE_UINT16);
 
 	vkCmdPushConstants(commandBuffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstants);
 
@@ -264,5 +300,49 @@ void Renderer::RenderTriangle()
 	scissor.extent.height = windowData->Height;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	vkCmdDrawIndexed(commandBuffer, 3, 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+}
+
+void Renderer::RenderRectangle()
+{
+	// TODO: vulkan device lost error when doing InitBuffers on every Render call
+
+	// for a cube need 8 vertices of type vec3
+	// and 36 indices for a cube
+	//const std::vector<glm::vec2> vertices = {
+	//		glm::vec2(-0.5f, -0.5f),
+	//		glm::vec2(-0.5f,  0.5f),
+	//		glm::vec2( 0.5f,  0.5f),
+	//		glm::vec2( 0.5f, -0.5f),
+	//};
+	const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
+	//InitBuffers(vertices, indices);
+
+	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
+	auto windowData = GetWindowData();
+
+	float viewportWidth = static_cast<float>(windowData->Width);
+	float viewportHeight = static_cast<float>(windowData->Height);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
+
+	VkDeviceSize offset{ 0 };
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.Handle, &offset);
+	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.Handle, offset, VK_INDEX_TYPE_UINT16);
+
+	vkCmdPushConstants(commandBuffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstants);
+
+	VkViewport vp{};
+	vp.y = viewportHeight;
+	vp.width = viewportWidth;
+	vp.height = -viewportHeight;
+	vp.minDepth = 0.0f;
+	vp.maxDepth = 1.0f;
+	vkCmdSetViewport(commandBuffer, 0, 1, &vp);
+
+	VkRect2D scissor{};
+	scissor.extent.width = windowData->Width;
+	scissor.extent.height = windowData->Height;
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
 }
