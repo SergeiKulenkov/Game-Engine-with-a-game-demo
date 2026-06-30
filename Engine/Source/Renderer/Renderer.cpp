@@ -3,6 +3,7 @@
 #include <array>
 #include <fstream>
 #include <imgui_impl_vulkan.h>
+#include "glm/gtc/matrix_transform.hpp"
 
 #include "../Scene/Scene.h"
 #include "../Engine/Engine.h"
@@ -33,20 +34,22 @@ static uint32_t GetMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bi
 
 void Renderer::Init()
 {
-	InitPipeline();
+	// this can be done with a pipeline builder
+	InitPipeline(&m_Pipeline, &m_Layout, rectangleVertexShaderPath, rectangleFragmentShaderPath);
+	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, circleVertexShaderPath, circleFragmentShaderPath);
 
-	// TODO: remove after fixing the device lost error
+	// TODO: device lost error when creating buffers every frame
 	const std::vector<glm::vec2> vertices = {
 			glm::vec2(-0.5f, -0.5f),
 			glm::vec2(-0.5f,  0.5f),
-			glm::vec2(0.5f,  0.5f),
-			glm::vec2(0.5f, -0.5f),
+			glm::vec2( 0.5f,  0.5f),
+			glm::vec2( 0.5f, -0.5f),
 	};
 	const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
 	InitBuffers(vertices, indices);
 }
 
-void Renderer::InitPipeline()
+void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
 	VkDevice device = Engine::GetDevice();
 	VkRenderPass renderPass = GetWindowData()->RenderPass;
@@ -59,7 +62,7 @@ void Renderer::InitPipeline()
 	VkPipelineLayoutCreateInfo layout_info{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 	layout_info.pPushConstantRanges = &pushConstantRange;
 	layout_info.pushConstantRangeCount = 1;
-	check_vk_result(vkCreatePipelineLayout(device, &layout_info, nullptr, &m_Layout));
+	check_vk_result(vkCreatePipelineLayout(device, &layout_info, nullptr, layout));
 
 	VkPipelineInputAssemblyStateCreateInfo input_assembly{ VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
 	input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -130,10 +133,10 @@ void Renderer::InitPipeline()
 	pipe.pDepthStencilState = &depth_stencil;
 	pipe.pColorBlendState = &blend;
 	pipe.pDynamicState = &dynamic;
-	pipe.layout = m_Layout;
+	pipe.layout = *layout;
 	pipe.renderPass = renderPass;
 
-	check_vk_result(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipe, nullptr, &m_Pipeline));
+	check_vk_result(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipe, nullptr, pipeline));
 	vkDestroyShaderModule(device, shader_stages[0].module, nullptr);
 	vkDestroyShaderModule(device, shader_stages[1].module, nullptr);
 }
@@ -176,6 +179,9 @@ void Renderer::Shutdown()
 	VkDevice device = Engine::GetDevice();
 	vkDestroyPipeline(device, m_Pipeline, nullptr);
 	vkDestroyPipelineLayout(device, m_Layout, nullptr);
+
+	vkDestroyPipeline(device, m_PipelineCircle, nullptr);
+	vkDestroyPipelineLayout(device, m_LayoutCircle, nullptr);
 
 	vkDestroyBuffer(device, m_VertexBuffer.Handle, nullptr);
 	vkFreeMemory(device, m_VertexBuffer.Memory, nullptr);
@@ -255,8 +261,8 @@ void Renderer::Render(const Scene& scene)
 	// and vk cmd push constants and vk cmd bind descriptor sets
 	// then a loop through all draw lists with vk cmd set scissor and finally vk cmd draw indexed
 
-	//RenderTriangle();
 	RenderRectangle();
+	RenderCircle();
 
 	// get entities from Scene? or get Sprites from Scene?
 	// what about drawing debug primitives? then get all entities to pass this* to them?
@@ -264,28 +270,20 @@ void Renderer::Render(const Scene& scene)
 	// 
 }
 
-void Renderer::RenderTriangle()
+void Renderer::RenderCircle()
 {
-	const std::vector<glm::vec2> vertices = {
-			glm::vec2(-0.5f, -0.5f),
-			glm::vec2( 0.0f,  0.5f),
-			glm::vec2( 0.5f, -0.5f)
-	};
-	const std::vector<uint16_t> indices = { 0, 1, 2 };
-	InitBuffers(vertices, indices);
-
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	auto windowData = GetWindowData();
 
 	float viewportWidth = static_cast<float>(windowData->Width);
 	float viewportHeight = static_cast<float>(windowData->Height);
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineCircle);
 
 	VkDeviceSize offset{ 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.Handle, &offset);
 	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.Handle, offset, VK_INDEX_TYPE_UINT16);
 
-	vkCmdPushConstants(commandBuffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstants);
+	vkCmdPushConstants(commandBuffer, m_LayoutCircle, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstantsCircle);
 
 	VkViewport vp{};
 	vp.y = viewportHeight;
@@ -300,24 +298,11 @@ void Renderer::RenderTriangle()
 	scissor.extent.height = windowData->Height;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, 6, 1, 0, 0, 0);
 }
 
 void Renderer::RenderRectangle()
 {
-	// TODO: vulkan device lost error when doing InitBuffers on every Render call
-
-	// for a cube need 8 vertices of type vec3
-	// and 36 indices for a cube
-	//const std::vector<glm::vec2> vertices = {
-	//		glm::vec2(-0.5f, -0.5f),
-	//		glm::vec2(-0.5f,  0.5f),
-	//		glm::vec2( 0.5f,  0.5f),
-	//		glm::vec2( 0.5f, -0.5f),
-	//};
-	const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
-	//InitBuffers(vertices, indices);
-
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	auto windowData = GetWindowData();
 
@@ -328,6 +313,16 @@ void Renderer::RenderRectangle()
 	VkDeviceSize offset{ 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.Handle, &offset);
 	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.Handle, offset, VK_INDEX_TYPE_UINT16);
+
+	glm::mat4 cameraTransform = glm::translate(glm::mat4(1.0f), m_CameraPosition);
+	m_PushConstants.ViewProjection = glm::perspectiveFov(glm::radians(45.0f), viewportWidth, viewportHeight, 0.1f, 1000.0f)
+		* glm::inverse(cameraTransform);
+
+	m_QuadPosition.x += 0.005f;
+	m_PushConstants.Transform = glm::translate(glm::mat4(1.0f), glm::vec3(m_QuadPosition, 0.f));
+	//m_PushConstants.Transform = glm::translate(glm::mat4(1.0f), m_CubePosition)
+	//	* glm::eulerAngleXYZ(glm::radians(m_CubeRotation.x), glm::radians(m_CubeRotation.y), glm::radians(m_CubeRotation.z));
+	// multiply by scale
 
 	vkCmdPushConstants(commandBuffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstants);
 
@@ -344,5 +339,5 @@ void Renderer::RenderRectangle()
 	scissor.extent.height = windowData->Height;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()), 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, 6, 1, 0, 0, 0);
 }
