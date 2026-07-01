@@ -24,6 +24,7 @@ public:
 	void SetData(const void* data);
 
 	VkDescriptorSet GetDescriptorSet() const { return m_DescriptorSet; }
+	const VkDescriptorImageInfo& GetImageInfo() const { return m_ImageInfo; }
 
 	void Resize(const uint32_t width, const uint32_t height);
 
@@ -41,6 +42,8 @@ private:
 	VkImageView m_ImageView = nullptr;
 	VkDeviceMemory m_Memory = nullptr;
 	VkSampler m_Sampler = nullptr;
+
+	VkDescriptorImageInfo m_ImageInfo;
 
 	ImageFormat m_Format = ImageFormat::None;
 

@@ -41,6 +41,9 @@ public:
 	static VkDevice GetDevice();
 	static VkCommandBuffer GetActiveCommandBuffer();
 
+	static VkDescriptorSet AllocateSecriptorSet(VkDescriptorSetLayout descriptorSetLayout);
+	static void AllocateSecriptorSets(VkDescriptorSetLayout descriptorSetLayout, const uint32_t count, std::vector<VkDescriptorSet>& result);
+
 	static VkCommandBuffer GetCommandBuffer(bool begin);
 	static void FlushCommandBuffer(VkCommandBuffer commandBuffer);
 

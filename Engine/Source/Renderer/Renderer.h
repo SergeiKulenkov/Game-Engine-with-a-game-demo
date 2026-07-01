@@ -3,29 +3,41 @@
 #include <string>
 #include <filesystem>
 #include <vector>
+#include <memory>
 
 #include "glm/glm.hpp"
 #include "vulkan/vulkan.h"
 
 class Engine;
 class Scene;
+class Camera;
+class Image;
 
 ////////////////////
 
 struct Buffer
 {
-	VkBuffer Handle = nullptr;
-	VkDeviceMemory Memory = nullptr;
-	VkDeviceSize Size = 0;
-	VkBufferUsageFlagBits Usage = VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
+	VkBuffer handle = nullptr;
+	VkDeviceMemory memory = nullptr;
+	VkDeviceSize size = 0;
+	VkBufferUsageFlagBits usage = VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM;
 };
 
 ////////////////////
 
 struct PushConstants
 {
-	glm::mat4 ViewProjection = glm::mat4();
-	glm::mat4 Transform = glm::mat4();
+	glm::mat4 viewProjection = glm::mat4();
+	glm::mat4 transform = glm::mat4();
+};
+
+////////////////////
+
+struct Vertex
+{
+	glm::vec2 position = glm::vec2(0.f, 0.f);
+	glm::vec2 textureCoord = glm::vec2(0.f, 0.f);
+	//glm::vec3 colour = glm::vec3(0.f, 0.f, 0.f);
 };
 
 ////////////////////
@@ -47,7 +59,8 @@ private:
 
 	void Init();
 	void InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-	void InitBuffers(const std::vector<glm::vec2>& vertices, const std::vector<uint16_t>& indices);
+	void InitBuffers(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
+	void InitDescriptors();
 
 	void Shutdown();
 
@@ -55,7 +68,11 @@ private:
 
 	VkShaderModule LoadShaderModule(const std::filesystem::path& path);
 
+	void BeginScene(const Camera& camera);
+
 	////////////////////
+
+	static constexpr uint16_t vertexNumberForRectangle = 4;
 
 	static inline const std::string shaderFolderPath = "../Assets/Shaders/";
 	static inline const std::string rectangleVertexShaderPath = shaderFolderPath + "rectangle.vert.spirv";
@@ -63,20 +80,25 @@ private:
 	static inline const std::string circleVertexShaderPath = shaderFolderPath + "circle.vert.spirv";
 	static inline const std::string circleFragmentShaderPath = shaderFolderPath + "circle.frag.spirv";
 
+	static constexpr std::string_view texturePath = "../Assets/testTexture.png";
+
 	VkPipeline m_Pipeline = nullptr;
 	VkPipelineLayout m_Layout = nullptr;
+	VkDescriptorSetLayout m_DescriptorSetLayout = nullptr;
+	VkDescriptorSet m_DescriptorSet = nullptr;
 
 	VkPipeline m_PipelineCircle = nullptr;
 	VkPipelineLayout m_LayoutCircle = nullptr;
 
 	Buffer m_VertexBuffer;
 	Buffer m_IndexBuffer;
+
 	PushConstants m_PushConstants = {};
 	PushConstants m_PushConstantsCircle = {};
 
 	glm::vec2 m_QuadPosition = glm::vec2(-0.5f, 0.6f);
-	glm::vec2 m_Rotation = glm::vec2(0.f, 0.f);
-	glm::vec3 m_CameraPosition = glm::vec3(0, 0, 3.f);
+
+	std::shared_ptr<Image> m_Image;
 
 	friend class Engine;
 };

@@ -159,6 +159,9 @@ void Image::AllocateMemory()
 
 	// Create the Descriptor Set:
 	m_DescriptorSet = (VkDescriptorSet)ImGui_ImplVulkan_AddTexture(m_ImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+	m_ImageInfo.imageView = m_ImageView;
+	m_ImageInfo.sampler = m_Sampler;
+	m_ImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 }
 
 void Image::Release()

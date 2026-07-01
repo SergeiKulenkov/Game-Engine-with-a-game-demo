@@ -500,6 +500,8 @@ void Engine::Shutdown()
     VkResult err = vkDeviceWaitIdle(g_Device);
     check_vk_result(err);
 
+    m_Renderer.Shutdown();
+
     // Free resources in queue
     for (auto& queue : s_ResourceFreeQueue)
     {
@@ -508,7 +510,6 @@ void Engine::Shutdown()
     }
     s_ResourceFreeQueue.clear();
 
-    m_Renderer.Shutdown();
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -605,6 +606,28 @@ VkDevice Engine::GetDevice()
 VkCommandBuffer Engine::GetActiveCommandBuffer()
 {
     return g_ActiveCommandBuffer;
+}
+
+VkDescriptorSet Engine::AllocateSecriptorSet(VkDescriptorSetLayout descriptorSetLayout)
+{
+    VkDescriptorSet result;
+    VkDescriptorSetAllocateInfo info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+    info.descriptorSetCount = 1;
+    info.descriptorPool = g_DescriptorPool;
+    info.pSetLayouts = &descriptorSetLayout;
+    check_vk_result(vkAllocateDescriptorSets(g_Device, &info, &result));
+    return result;
+}
+
+void Engine::AllocateSecriptorSets(VkDescriptorSetLayout descriptorSetLayout, const uint32_t count, std::vector<VkDescriptorSet>& result)
+{
+    VkDescriptorSetAllocateInfo info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+    info.descriptorSetCount = count;
+    info.descriptorPool = g_DescriptorPool;
+    info.pSetLayouts = &descriptorSetLayout;
+
+    result.resize(count);
+    check_vk_result(vkAllocateDescriptorSets(g_Device, &info, result.data()));
 }
 
 VkCommandBuffer Engine::GetCommandBuffer(bool begin)

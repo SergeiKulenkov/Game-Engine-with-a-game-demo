@@ -7,6 +7,7 @@
 #include "../Input/KeyCodes.h"
 #include "../Utility/Timer.h"
 #include "../Utility/DebugWindow.h"
+#include "../Renderer/Camera.h"
 
 class Collider;
 class Rigidbody;
@@ -86,6 +87,11 @@ public:
 	void RegisterCheckbox(const std::string_view& name, bool* activated);
 	void RegisterRadioButton(const std::string_view& sectionTitle, uint8_t* activatedIndex, const std::vector<std::string_view>& labels);
 
+	const Camera& GetCamera() const { return m_Camera; }
+	glm::vec3 GetCameraPosition() const { return m_Camera.GetPosition(); }
+	void MoveCamera(const glm::vec3& position) { m_Camera.SetPosition(position); }
+	void ZoomCamera() { m_Camera.Zoom(); }
+
 protected:
 	Scene() {}
 
@@ -117,6 +123,7 @@ private:
 	ImDrawList* m_DrawList = nullptr;
 
 	Physics m_Physics;
+	Camera m_Camera;
 
 	std::unique_ptr<DebugWindow> m_DebugWindow = nullptr;
 
