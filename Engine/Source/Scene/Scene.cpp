@@ -17,6 +17,7 @@ Scene::~Scene()
 void Scene::Start(bool displayDebugWindow)
 {
 	m_Physics.Start(GetScreenSize());
+	m_Camera.Init(this);
 
 	if (displayDebugWindow)
 	{

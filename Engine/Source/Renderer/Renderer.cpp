@@ -4,6 +4,7 @@
 #include <fstream>
 #include <imgui_impl_vulkan.h>
 #include "glm/gtc/matrix_transform.hpp"
+#include "glm/gtx/euler_angles.hpp"
 
 #include "../Scene/Scene.h"
 #include "../Engine/Engine.h"
@@ -312,14 +313,11 @@ VkShaderModule Renderer::LoadShaderModule(const std::filesystem::path& path)
 
 void Renderer::BeginScene(const Camera& camera)
 {
-	const glm::vec3 cameraPosition = camera.GetPosition();
 	auto windowData = GetWindowData();
 	float viewportWidth = static_cast<float>(windowData->Width);
 	float viewportHeight = static_cast<float>(windowData->Height);
-
-	glm::mat4 cameraTransform = glm::translate(glm::mat4(1.0f), cameraPosition);
-	m_PushConstants.viewProjection = glm::perspectiveFov(glm::radians(camera.GetAngle()), viewportWidth, viewportHeight, camera.GetNearClipPlane(), camera.GetFarClipPlane())
-									* glm::inverse(cameraTransform);
+	
+	m_PushConstants.viewProjection = camera.GetViewProjection();
 
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	VkViewport vp{};
@@ -367,7 +365,9 @@ void Renderer::RenderCircle()
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.handle, &offset);
 	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.handle, offset, VK_INDEX_TYPE_UINT16);
 
-	//m_PushConstants.Transform = glm::translate(glm::mat4(1.0f), glm::vec3(m_QuadPosition, 0.f));
+	//m_PushConstantsCircle.transform = glm::translate(glm::mat4(1.0f), glm::vec3(m_QuadPosition, 0.f))
+	//	* glm::eulerAngleZ(m_QuadAngle)
+	// * glm::scale(glm::mat4(1.f), glm::vec3(m_QuadScale.x, m_QuadScale.y, 1.f));
 	vkCmdPushConstants(commandBuffer, m_LayoutCircle, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstantsCircle);
 
 	vkCmdDrawIndexed(commandBuffer, 6, 1, 0, 0, 0);
@@ -383,11 +383,13 @@ void Renderer::RenderRectangle()
 	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.handle, offset, VK_INDEX_TYPE_UINT16);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &m_DescriptorSet, 0, nullptr);
 
-	// probably need to move this data to a vertex cause it's not actually constant??
 	//m_QuadPosition.x += 0.0025f;
-	m_PushConstants.transform = glm::translate(glm::mat4(1.0f), glm::vec3(m_QuadPosition, 0.f));
-	// multiply by scale
+	//m_QuadAngle += 0.05f;
+	//m_QuadScale.x += 0.005f;
+	m_PushConstants.transform = glm::translate(glm::mat4(1.0f), glm::vec3(m_QuadPosition, 0.f))
+							* glm::eulerAngleZ(m_QuadAngle)
+							* glm::scale(glm::mat4(1.f), glm::vec3(m_QuadScale.x, m_QuadScale.y, 1.f));
+	
 	vkCmdPushConstants(commandBuffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstants);
-
 	vkCmdDrawIndexed(commandBuffer, 6, 1, 0, 0, 0);
 }

@@ -1,25 +1,76 @@
 #pragma once
 #include <glm/glm.hpp>
+#include "glm/gtc/matrix_transform.hpp"
+
+class Scene;
 
 ////////////////////
 
 class Camera
 {
 public:
-	Camera() {}
+	~Camera() { m_Scene = nullptr; }
 
-	void SetPosition(const glm::vec3& position) {}
-	glm::vec3 GetPosition() const { return m_CameraPosition; }
+	const glm::vec3& GetPosition() const { return m_Position; }
+	void SetPosition(const glm::vec3& position)
+	{
+		m_Position = position;
+		UpdateViewProjection();
+	}
 
-	float GetAngle() const { return m_Angle; }
+	float GetRotationAngle() const { return m_RotationAngle; }
+	void SetRotationAngle(const float angle)
+	{
+		m_RotationAngle = angle;
+		UpdateViewProjection();
+	}
+
+	const glm::mat4& GetViewProjection() const { return m_ViewProjection; }
+	void SetOrthographicSize(const float size)
+	{
+		m_OrthoSize = size;
+		UpdateViewProjection();
+	}
+
+	float GetFOVAngle() const { return m_FOVAngle; }
 	float GetNearClipPlane() const { return m_NearClipPlane; }
 	float GetFarClipPlane() const { return m_FarClipPlane; }
 
-	void Zoom() {}
+	// in orthographic mode just modifies the orthographic size by the zoom value
+	void Zoom(const float zoom)
+	{
+		m_OrthoSize += zoom;
+		UpdateViewProjection();
+	}
+
+	void UpdateAspectRatio();
 
 private:
-	glm::vec3 m_CameraPosition = glm::vec3(0, 0, 3.f);
-	float m_Angle = 45.f;
+	Camera() {}
+
+	void Init(Scene* scene);
+
+	void UpdateViewProjection();
+
+	////////////////////
+	
+	static constexpr float aspectRatio169 = 1.78f;
+
+	Scene* m_Scene = nullptr;
+
+	glm::vec3 m_Position = glm::vec3(0.f, 0.f, 0.f);
+	float m_RotationAngle = 0.f;
+	glm::mat4 m_ViewProjection = glm::mat4();
+	glm::u16vec2 m_AspectRatio = glm::u16vec2(16, 9);
+	//float m_ZoomLevel = 1.f;
+
+	// orthographic
+	float m_OrthoSize = 1.f;
+
+	// perspective
+	float m_FOVAngle = 45.f;
 	float m_NearClipPlane = 0.1f;
 	float m_FarClipPlane = 1000.f;
+
+	friend class Scene;
 };

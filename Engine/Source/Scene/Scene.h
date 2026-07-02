@@ -88,9 +88,11 @@ public:
 	void RegisterRadioButton(const std::string_view& sectionTitle, uint8_t* activatedIndex, const std::vector<std::string_view>& labels);
 
 	const Camera& GetCamera() const { return m_Camera; }
+	Camera& GetCamera() { return m_Camera; }
+
 	glm::vec3 GetCameraPosition() const { return m_Camera.GetPosition(); }
 	void MoveCamera(const glm::vec3& position) { m_Camera.SetPosition(position); }
-	void ZoomCamera() { m_Camera.Zoom(); }
+	void ZoomCamera(const float zoom) { m_Camera.Zoom(zoom); }
 
 protected:
 	Scene() {}

@@ -82,21 +82,24 @@ private:
 
 	static constexpr std::string_view texturePath = "../Assets/testTexture.png";
 
+	// TODO: pipeline should be a separate object with all this data
+	// and so its initialization should be separated from this class
 	VkPipeline m_Pipeline = nullptr;
 	VkPipelineLayout m_Layout = nullptr;
 	VkDescriptorSetLayout m_DescriptorSetLayout = nullptr;
 	VkDescriptorSet m_DescriptorSet = nullptr;
+	PushConstants m_PushConstants = {};
 
 	VkPipeline m_PipelineCircle = nullptr;
 	VkPipelineLayout m_LayoutCircle = nullptr;
+	PushConstants m_PushConstantsCircle = {};
 
 	Buffer m_VertexBuffer;
 	Buffer m_IndexBuffer;
 
-	PushConstants m_PushConstants = {};
-	PushConstants m_PushConstantsCircle = {};
-
-	glm::vec2 m_QuadPosition = glm::vec2(-0.5f, 0.6f);
+	glm::vec2 m_QuadPosition = glm::vec2(0.4f, 0.6f);
+	float m_QuadAngle = 0.f;
+	glm::vec2 m_QuadScale = glm::vec2(1.0f, 1.0f);
 
 	std::shared_ptr<Image> m_Image;
 
