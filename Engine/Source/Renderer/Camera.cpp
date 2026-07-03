@@ -29,12 +29,10 @@ void Camera::UpdateViewProjection()
 									* glm::rotate(glm::mat4(1.f), glm::radians(m_RotationAngle), glm::vec3(0.f, 0.f, 1.f));
 
 	// same calculations as in Unity
-	//float height = m_OrthoSize * 2.f;
-	//float width = height * (m_AspectRatio.x / m_AspectRatio.y);
-	//height /= 2.f;
-	//width /= 2.f;
+	float width = (m_OrthoSize * 2.f) * (static_cast<float>(m_AspectRatio.x) / static_cast<float>(m_AspectRatio.y));
+	width /= 2.f;
 
-	m_ViewProjection = glm::ortho(-m_OrthoSize, m_OrthoSize, -m_OrthoSize, m_OrthoSize, -1.f, 1.f)
+	m_ViewProjection = glm::ortho(-width, width, -m_OrthoSize, m_OrthoSize, -1.f, 1.f)
 					* glm::inverse(cameraTransform);
 
 	// perspective

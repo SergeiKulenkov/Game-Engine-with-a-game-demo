@@ -39,8 +39,9 @@ void Renderer::Init()
 {
 	m_Image = std::make_shared<Image>(texturePath);
 
-	//  TODO: implement a pipeline builder for this
+	// TODO: init descriptors for every image? and change image creation to remove imgui function call?
 	InitDescriptors();
+	//  TODO: implement a pipeline builder for this
 	InitPipeline(&m_Pipeline, &m_Layout, rectangleVertexShaderPath, rectangleFragmentShaderPath);
 	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, circleVertexShaderPath, circleFragmentShaderPath);
 
@@ -55,17 +56,17 @@ void Renderer::Init()
 		vertices.emplace_back(newVertex);
 
 		newVertex.position = glm::vec2(-0.5f, 0.5f);
-		newVertex.textureCoord = glm::vec2(0.0f, 0.0f);
+		newVertex.textureCoord = glm::vec2(0.0f, 1.0f);
 		//newVertex.colour = glm::vec3(252.f / 255.f, 195.f / 255.f, 40.f / 255.f);
 		vertices.emplace_back(newVertex);
 
 		newVertex.position = glm::vec2(0.5f, 0.5f);
-		newVertex.textureCoord = glm::vec2(0.0f, 0.0f);
+		newVertex.textureCoord = glm::vec2(1.0f, 1.0f);
 		//newVertex.colour = glm::vec3(45.f / 255.f, 115.f / 255.f, 225.f / 255.f);
 		vertices.emplace_back(newVertex);
 
 		newVertex.position = glm::vec2(0.5f, -0.5f);
-		newVertex.textureCoord = glm::vec2(0.0f, 0.0f);
+		newVertex.textureCoord = glm::vec2(1.0f, 0.0f);
 		//newVertex.colour = glm::vec3(0.f / 255.f, 255.f / 255.f, 0.f / 255.f);
 		vertices.emplace_back(newVertex);
 
@@ -107,7 +108,7 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	
 	attribute_descriptions[1].location = 1;
 	attribute_descriptions[1].binding = binding_description.binding;
-	attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+	attribute_descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
 	attribute_descriptions[1].offset = static_cast<uint32_t>(offsetof(Vertex, textureCoord));
 
 	VkPipelineVertexInputStateCreateInfo vertex_input{ VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
@@ -219,6 +220,8 @@ void Renderer::InitDescriptors()
 	info.bindingCount = 1;
 	info.pBindings = &binding;
 	check_vk_result(vkCreateDescriptorSetLayout(device, &info, nullptr, &m_DescriptorSetLayout));
+	// vulkan debug message
+	// binding 0 was created with VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER but VkDescriptorPool was not created with any VkDescriptorPoolSize::type with VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
 	m_DescriptorSet = Engine::AllocateSecriptorSet(m_DescriptorSetLayout);
 	
 	VkWriteDescriptorSet writeDS = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
@@ -318,6 +321,7 @@ void Renderer::BeginScene(const Camera& camera)
 	float viewportHeight = static_cast<float>(windowData->Height);
 	
 	m_PushConstants.viewProjection = camera.GetViewProjection();
+	m_PushConstantsCircle.viewProjection = camera.GetViewProjection();
 
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	VkViewport vp{};
@@ -347,8 +351,12 @@ void Renderer::Render(const Scene& scene)
 
 	BeginScene(scene.GetCamera());
 
-	RenderRectangle();
-	RenderCircle();
+	//m_QuadPosition.x += 0.0025f;
+	//m_QuadAngle += 0.05f;
+	//m_QuadScale.x += 0.005f;
+
+	RenderRectangle(m_QuadPosition, m_QuadScale, m_QuadAngle);
+	RenderCircle(glm::vec2(-0.7f, -0.4f), glm::vec2(1.f, 1.f), 0.f);
 
 	// get entities from Scene? or get Sprites from Scene?
 	// what about drawing debug primitives? then get all entities to pass this* to them?
@@ -356,7 +364,7 @@ void Renderer::Render(const Scene& scene)
 	// and also need Entity's tranform for position and scale
 }
 
-void Renderer::RenderCircle()
+void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle)
 {
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineCircle);
@@ -365,15 +373,15 @@ void Renderer::RenderCircle()
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.handle, &offset);
 	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.handle, offset, VK_INDEX_TYPE_UINT16);
 
-	//m_PushConstantsCircle.transform = glm::translate(glm::mat4(1.0f), glm::vec3(m_QuadPosition, 0.f))
-	//	* glm::eulerAngleZ(m_QuadAngle)
-	// * glm::scale(glm::mat4(1.f), glm::vec3(m_QuadScale.x, m_QuadScale.y, 1.f));
+	m_PushConstantsCircle.transform = glm::translate(glm::mat4(1.0f), glm::vec3(quadPosition, 0.f))
+									* glm::eulerAngleZ(quadAngle)
+									* glm::scale(glm::mat4(1.f), glm::vec3(quadScale.x, quadScale.y, 1.f));
 	vkCmdPushConstants(commandBuffer, m_LayoutCircle, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstantsCircle);
 
 	vkCmdDrawIndexed(commandBuffer, 6, 1, 0, 0, 0);
 }
 
-void Renderer::RenderRectangle()
+void Renderer::RenderRectangle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle)
 {
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
@@ -383,13 +391,11 @@ void Renderer::RenderRectangle()
 	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.handle, offset, VK_INDEX_TYPE_UINT16);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &m_DescriptorSet, 0, nullptr);
 
-	//m_QuadPosition.x += 0.0025f;
-	//m_QuadAngle += 0.05f;
-	//m_QuadScale.x += 0.005f;
-	m_PushConstants.transform = glm::translate(glm::mat4(1.0f), glm::vec3(m_QuadPosition, 0.f))
-							* glm::eulerAngleZ(m_QuadAngle)
-							* glm::scale(glm::mat4(1.f), glm::vec3(m_QuadScale.x, m_QuadScale.y, 1.f));
-	
+	// TODO: apply Sprite's layer as Z position? or just sort them by position?
+	m_PushConstants.transform = glm::translate(glm::mat4(1.0f), glm::vec3(quadPosition, 0.f))
+								* glm::eulerAngleZ(quadAngle)
+								* glm::scale(glm::mat4(1.f), glm::vec3(quadScale.x, quadScale.y, 1.f));
+
 	vkCmdPushConstants(commandBuffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstants);
 	vkCmdDrawIndexed(commandBuffer, 6, 1, 0, 0, 0);
 }

@@ -2,6 +2,7 @@
 #include <vector>
 
 #include <Input/InputManager.h>
+#include <Renderer/Camera.h>
 #include <Scene/Scene.h>
 #include <Scene/Physics.h>
 #include <Scene/Component/Transform.h>
@@ -60,6 +61,14 @@ void Player::Update(float deltaTime)
 	{
 		m_Speed -= linearDamping;
 		if (m_Speed < 0.f) m_Speed = 0.f;
+	}
+
+	// camera test
+	if (input != glm::vec2(0.f, 0.f))
+	{
+		const float cameraSpeed = 5.f;
+		Camera& camera = m_Scene->GetCamera();
+		camera.GetPosition() += glm::vec3(input.x * cameraSpeed * deltaTime, input.y * cameraSpeed * deltaTime, 0.f);
 	}
 }
 

@@ -30,14 +30,14 @@ public:
 		RotateImageQuad();
 
 		// TODO: pass to the Renderer
-		// through a Renderer* which can be passed here instead of the drawList??
-		// but the Scene probably doesn't need the Renderer
-		// or the Scene can pass Sprites to the Renderer which sounds less performant
 		drawList.AddImageQuad((ImTextureID)m_Image->GetDescriptorSet(), m_ImageQuadPositions[0], m_ImageQuadPositions[1], m_ImageQuadPositions[2], m_ImageQuadPositions[3],
 			m_ImageQuadUVs[0], m_ImageQuadUVs[1], m_ImageQuadUVs[2], m_ImageQuadUVs[3]);
 	}
 
-	glm::vec2 GetSize() const { return m_HalfSize * 2.f; }
+	const glm::vec2& GetSize() const { return m_HalfSize * 2.f; }
+
+	void SetLayer(const uint16_t layer) { m_Layer = layer; }
+	uint16_t GetLayer() const { return m_Layer; }
 
 protected:
 	virtual void OnInit() override
@@ -85,4 +85,6 @@ private:
 
 	glm::vec2 m_HalfSize = glm::vec2(0.f, 0.f);
 	std::weak_ptr<TransformData> m_TransformData;
+
+	uint16_t m_Layer = 0;
 };

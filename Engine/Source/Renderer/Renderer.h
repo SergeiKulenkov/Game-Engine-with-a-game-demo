@@ -47,11 +47,9 @@ class Renderer
 public:
 	void Render(const Scene& scene);
 
-	void RenderCircle();
-	void RenderRectangle();
+	void RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle);
+	void RenderRectangle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle);
 
-	// move drawing primitives and images here
-	// leave UI windows for imgui
 	void DrawImageQuad();
 
 private:
@@ -84,6 +82,7 @@ private:
 
 	// TODO: pipeline should be a separate object with all this data
 	// and so its initialization should be separated from this class
+	// so like m_PipelinePrimitiveRectangle, m_PipelineTextured
 	VkPipeline m_Pipeline = nullptr;
 	VkPipelineLayout m_Layout = nullptr;
 	VkDescriptorSetLayout m_DescriptorSetLayout = nullptr;
@@ -99,7 +98,7 @@ private:
 
 	glm::vec2 m_QuadPosition = glm::vec2(0.4f, 0.6f);
 	float m_QuadAngle = 0.f;
-	glm::vec2 m_QuadScale = glm::vec2(1.0f, 1.0f);
+	glm::vec2 m_QuadScale = glm::vec2(1.f, 1.f); // also like a size for primitives
 
 	std::shared_ptr<Image> m_Image;
 

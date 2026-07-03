@@ -12,6 +12,7 @@ public:
 	~Camera() { m_Scene = nullptr; }
 
 	const glm::vec3& GetPosition() const { return m_Position; }
+	glm::vec3& GetPosition() { return m_Position; }
 	void SetPosition(const glm::vec3& position)
 	{
 		m_Position = position;
@@ -19,6 +20,7 @@ public:
 	}
 
 	float GetRotationAngle() const { return m_RotationAngle; }
+	float& GetRotationAngle() { return m_RotationAngle; }
 	void SetRotationAngle(const float angle)
 	{
 		m_RotationAngle = angle;
@@ -58,6 +60,7 @@ private:
 
 	Scene* m_Scene = nullptr;
 
+	// TODO: test the Z position
 	glm::vec3 m_Position = glm::vec3(0.f, 0.f, 0.f);
 	float m_RotationAngle = 0.f;
 	glm::mat4 m_ViewProjection = glm::mat4();

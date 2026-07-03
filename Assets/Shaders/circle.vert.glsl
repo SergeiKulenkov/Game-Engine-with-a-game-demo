@@ -1,7 +1,7 @@
 #version 460 core
 
-layout(location = 0) in vec2 inPosition;
-layout(location = 1) in vec3 inColor;
+layout(location = 0) in vec2 inVertexPosition;
+layout(location = 1) in vec2 inTextureCoord;
 
 layout(location = 0) out vec3 out_color;
 layout(location = 1) out vec2 out_pos;
@@ -21,9 +21,8 @@ layout(push_constant) uniform PushConstants
 
 void main()
 {
-    //gl_Position = u_PushConstants.Transform * u_PushConstants.ViewProjection * vec4(inPosition - 0.35, 0.0, 1.0);
+    gl_Position = u_PushConstants.ViewProjection * u_PushConstants.Transform * vec4(inVertexPosition, 0.0, 1.0);
     
-    gl_Position = vec4(inPosition - 0.35, 0.0, 1.0);
-    out_pos = inPosition - 0.2;
+    out_pos = inVertexPosition * 2.0;
     out_color = triangle_colors[gl_VertexIndex];
 }

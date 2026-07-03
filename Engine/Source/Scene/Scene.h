@@ -90,7 +90,9 @@ public:
 	const Camera& GetCamera() const { return m_Camera; }
 	Camera& GetCamera() { return m_Camera; }
 
-	glm::vec3 GetCameraPosition() const { return m_Camera.GetPosition(); }
+	const glm::vec3& GetCameraPosition() const { return m_Camera.GetPosition(); }
+	glm::vec3& GetCameraPosition() { return m_Camera.GetPosition(); }
+
 	void MoveCamera(const glm::vec3& position) { m_Camera.SetPosition(position); }
 	void ZoomCamera(const float zoom) { m_Camera.Zoom(zoom); }
 

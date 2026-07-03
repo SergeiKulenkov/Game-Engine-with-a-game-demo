@@ -37,6 +37,7 @@ void Scene::Update(float deltaTime)
 	}
 
 	m_Physics.Update(deltaTime);
+	m_Camera.UpdateViewProjection();
 
 	if (m_DebugWindow != nullptr)
 	{

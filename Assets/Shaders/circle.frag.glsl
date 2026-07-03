@@ -7,13 +7,16 @@ layout(location = 0) out vec4 out_color;
 
 void main()
 {
-	float thickness = 0.005;
+	float thickness = 0.05;
     float fade = 0.005;
     
-    float distance = 1.0 - length(gl_FragCoord);
+    float distance = 1.0 - length(inPosition);
     float alpha = smoothstep(0.0, fade, distance);
     alpha *= smoothstep(thickness + fade, thickness, distance);
 
-    out_color.rgb = inColor;
+    if (alpha == 0.0)
+        discard;
+
+    out_color = vec4(inColor, 1.0);
     out_color.a *= alpha;
 }

@@ -16,6 +16,5 @@ void main()
 {
     gl_Position = u_PushConstants.ViewProjection * u_PushConstants.Transform * vec4(inPosition, 0.0, 1.0);
     //out_color = inColor;
-    //out_color = vec3(1.0);
     out_TextureCoord = inTextureCoord;
 }
