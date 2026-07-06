@@ -37,7 +37,24 @@ struct Vertex
 {
 	glm::vec2 position = glm::vec2(0.f, 0.f);
 	glm::vec2 textureCoord = glm::vec2(0.f, 0.f);
-	//glm::vec3 colour = glm::vec3(0.f, 0.f, 0.f);
+};
+
+////////////////////
+
+struct VertexCircle
+{
+	glm::vec2 position = glm::vec2(0.f, 0.f);
+	float thickness = 0.5f;
+	glm::vec3 colour = glm::vec3(0.f, 0.f, 0.f);
+};
+
+////////////////////
+
+enum class ObjectType
+{
+	TEXTURED,
+	PRIMITIVE_CIRCLE,
+	PRIMITIVE_RECTANGLE,
 };
 
 ////////////////////
@@ -56,8 +73,8 @@ private:
 	Renderer() {}
 
 	void Init();
-	void InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-	void InitBuffers(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices);
+	void InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, const ObjectType type, const uint16_t count, const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
+	void InitBuffers(Buffer& vertexBuffer, const std::vector<Vertex>& vertices, Buffer& indexBuffer, const std::vector<uint16_t>& indices);
 	void InitDescriptors();
 
 	void Shutdown();
@@ -88,13 +105,13 @@ private:
 	VkDescriptorSetLayout m_DescriptorSetLayout = nullptr;
 	VkDescriptorSet m_DescriptorSet = nullptr;
 	PushConstants m_PushConstants = {};
+	Buffer m_VertexBuffer;
+	Buffer m_IndexBuffer;
 
 	VkPipeline m_PipelineCircle = nullptr;
 	VkPipelineLayout m_LayoutCircle = nullptr;
 	PushConstants m_PushConstantsCircle = {};
-
-	Buffer m_VertexBuffer;
-	Buffer m_IndexBuffer;
+	Buffer m_VertexBufferCircle;
 
 	glm::vec2 m_QuadPosition = glm::vec2(0.4f, 0.6f);
 	float m_QuadAngle = 0.f;

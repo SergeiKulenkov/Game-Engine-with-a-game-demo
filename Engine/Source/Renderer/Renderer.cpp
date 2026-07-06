@@ -39,12 +39,14 @@ void Renderer::Init()
 {
 	m_Image = std::make_shared<Image>(texturePath);
 
-	// TODO: init descriptors for every image? and change image creation to remove imgui function call?
+	// TODO: how to init descriptors for every image? and change image creation to remove imgui function call?
 	InitDescriptors();
-	//  TODO: implement a pipeline builder for this
-	InitPipeline(&m_Pipeline, &m_Layout, rectangleVertexShaderPath, rectangleFragmentShaderPath);
-	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, circleVertexShaderPath, circleFragmentShaderPath);
 
+	//  TODO: implement a pipeline builder for this
+	InitPipeline(&m_Pipeline, &m_Layout, ObjectType::TEXTURED, 2, rectangleVertexShaderPath, rectangleFragmentShaderPath);
+	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, ObjectType::PRIMITIVE_CIRCLE, 3, circleVertexShaderPath, circleFragmentShaderPath);
+
+	const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
 	{
 		Vertex newVertex;
 		std::vector<Vertex> vertices;
@@ -70,12 +72,40 @@ void Renderer::Init()
 		//newVertex.colour = glm::vec3(0.f / 255.f, 255.f / 255.f, 0.f / 255.f);
 		vertices.emplace_back(newVertex);
 
-		const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
-		InitBuffers(vertices, indices);
+		InitBuffers(m_VertexBuffer, vertices, m_IndexBuffer, indices);
+	}
+	{
+		VertexCircle newVertex;
+		std::vector<VertexCircle> vertices;
+		vertices.reserve(vertexNumberForRectangle);
+
+		newVertex.position = glm::vec2(-0.5f, -0.5f);
+		newVertex.thickness = 0.05f;
+		newVertex.colour = glm::vec3(161.f / 255.f, 80.f / 255.f, 230.f / 255.f);
+		vertices.emplace_back(newVertex);
+
+		newVertex.position = glm::vec2(-0.5f, 0.5f);
+		newVertex.thickness = 0.05f;
+		newVertex.colour = glm::vec3(252.f / 255.f, 195.f / 255.f, 40.f / 255.f);
+		vertices.emplace_back(newVertex);
+
+		newVertex.position = glm::vec2(0.5f, 0.5f);
+		newVertex.thickness = 0.05f;
+		newVertex.colour = glm::vec3(45.f / 255.f, 115.f / 255.f, 225.f / 255.f);
+		vertices.emplace_back(newVertex);
+
+		newVertex.position = glm::vec2(0.5f, -0.5f);
+		newVertex.thickness = 0.05f;
+		newVertex.colour = glm::vec3(0.f / 255.f, 255.f / 255.f, 0.f / 255.f);
+		vertices.emplace_back(newVertex);
+
+		// the function takes vertices of type Vertex
+		// doesn't work here cause index buffer has already been initialized
+		//InitBuffers(m_VertexBufferCircle, vertices, m_IndexBuffer, indices);
 	}
 }
 
-void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
+void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, const ObjectType type, const uint16_t count, const std::string& vertexShaderPath, const std::string& fragmentShaderPath)
 {
 	VkDevice device = Engine::GetDevice();
 	VkRenderPass renderPass = GetWindowData()->RenderPass;
@@ -97,25 +127,53 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 
 	VkVertexInputBindingDescription binding_description;
 	binding_description.binding = 0;
-	binding_description.stride = sizeof(Vertex);
 	binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	std::array<VkVertexInputAttributeDescription, 2> attribute_descriptions;
-	attribute_descriptions[0].location = 0;
-	attribute_descriptions[0].binding = binding_description.binding;
-	attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
-	attribute_descriptions[0].offset = 0;
-	
-	attribute_descriptions[1].location = 1;
-	attribute_descriptions[1].binding = binding_description.binding;
-	attribute_descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-	attribute_descriptions[1].offset = static_cast<uint32_t>(offsetof(Vertex, textureCoord));
+	std::vector<VkVertexInputAttributeDescription> attribute_descriptions(count);
+	switch (type)
+	{
+		case ObjectType::TEXTURED:
+			binding_description.stride = sizeof(Vertex);
 
-	VkPipelineVertexInputStateCreateInfo vertex_input{ VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-	vertex_input.vertexBindingDescriptionCount = 1;
-	vertex_input.pVertexBindingDescriptions = &binding_description;
-	vertex_input.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size());
-	vertex_input.pVertexAttributeDescriptions = attribute_descriptions.data();
+			attribute_descriptions[0].location = 0;
+			attribute_descriptions[0].binding = binding_description.binding;
+			attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+			attribute_descriptions[0].offset = 0;
+
+			attribute_descriptions[1].location = 1;
+			attribute_descriptions[1].binding = binding_description.binding;
+			attribute_descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+			attribute_descriptions[1].offset = static_cast<uint32_t>(offsetof(Vertex, textureCoord));
+			break;
+		case ObjectType::PRIMITIVE_CIRCLE:
+			binding_description.stride = sizeof(VertexCircle);
+
+			attribute_descriptions[0].location = 0;
+			attribute_descriptions[0].binding = binding_description.binding;
+			attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+			attribute_descriptions[0].offset = 0;
+
+			attribute_descriptions[1].location = 1;
+			attribute_descriptions[1].binding = binding_description.binding;
+			attribute_descriptions[1].format = VK_FORMAT_R32_SFLOAT;
+			attribute_descriptions[1].offset = static_cast<uint32_t>(offsetof(VertexCircle, thickness));
+
+			attribute_descriptions[2].location = 2;
+			attribute_descriptions[2].binding = binding_description.binding;
+			attribute_descriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attribute_descriptions[2].offset = static_cast<uint32_t>(offsetof(VertexCircle, colour));
+			break;
+		case ObjectType::PRIMITIVE_RECTANGLE:
+			break;
+		default:
+			break;
+	}
+
+	VkPipelineVertexInputStateCreateInfo vertexInputInfo = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
+	vertexInputInfo.vertexBindingDescriptionCount = 1;
+	vertexInputInfo.pVertexBindingDescriptions = &binding_description;
+	vertexInputInfo.vertexAttributeDescriptionCount = count;
+	vertexInputInfo.pVertexAttributeDescriptions = attribute_descriptions.data();
 
 	VkPipelineRasterizationStateCreateInfo raster{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
 	raster.cullMode = VK_CULL_MODE_BACK_BIT;
@@ -158,7 +216,7 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	VkGraphicsPipelineCreateInfo pipe{ VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
 	pipe.stageCount = static_cast<uint32_t>(shader_stages.size());
 	pipe.pStages = shader_stages.data();
-	pipe.pVertexInputState = &vertex_input;
+	pipe.pVertexInputState = &vertexInputInfo;
 	pipe.pInputAssemblyState = &input_assembly;
 	pipe.pViewportState = &viewport;
 	pipe.pRasterizationState = &raster;
@@ -174,37 +232,37 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	vkDestroyShaderModule(device, shader_stages[1].module, nullptr);
 }
 
-void Renderer::InitBuffers(const std::vector<Vertex>& vertices, const std::vector<uint16_t>& indices)
+void Renderer::InitBuffers(Buffer& vertexBuffer, const std::vector<Vertex>& vertices, Buffer& indexBuffer, const std::vector<uint16_t>& indices)
 {
 	VkDevice device = Engine::GetDevice();
-	uint64_t verticesMemory = sizeof(Vertex) * vertices.size();
+	uint64_t verticesMemory = sizeof(vertices[0]) * vertices.size();
 	uint64_t indicesMemory = sizeof(uint16_t) * indices.size();
 
-	m_VertexBuffer.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	CreateOrResizeBuffer(m_VertexBuffer, verticesMemory);
+	vertexBuffer.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+	CreateOrResizeBuffer(vertexBuffer, verticesMemory);
 
-	m_IndexBuffer.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	CreateOrResizeBuffer(m_IndexBuffer, indicesMemory);
+	indexBuffer.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+	CreateOrResizeBuffer(indexBuffer, indicesMemory);
 
-	Vertex* vbMemory;
-	check_vk_result(vkMapMemory(device, m_VertexBuffer.memory, 0, verticesMemory, 0, (void**)&vbMemory));
+	void* vbMemory;
+	check_vk_result(vkMapMemory(device, vertexBuffer.memory, 0, verticesMemory, 0, &vbMemory));
 	memcpy(vbMemory, vertices.data(), static_cast<size_t>(verticesMemory));
 
 	uint16_t* ibMemory;
-	check_vk_result(vkMapMemory(device, m_IndexBuffer.memory, 0, indicesMemory, 0, (void**)&ibMemory));
+	check_vk_result(vkMapMemory(device, indexBuffer.memory, 0, indicesMemory, 0, (void**)&ibMemory));
 	memcpy(ibMemory, indices.data(), static_cast<size_t>(indicesMemory));
 
 	VkMappedMemoryRange range[2] = {};
 	range[0].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-	range[0].memory = m_VertexBuffer.memory;
+	range[0].memory = vertexBuffer.memory;
 	range[0].size = VK_WHOLE_SIZE;
 	range[1].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-	range[1].memory = m_IndexBuffer.memory;
+	range[1].memory = indexBuffer.memory;
 	range[1].size = VK_WHOLE_SIZE;
 
 	check_vk_result(vkFlushMappedMemoryRanges(device, 2, range));
-	vkUnmapMemory(device, m_VertexBuffer.memory);
-	vkUnmapMemory(device, m_IndexBuffer.memory);
+	vkUnmapMemory(device, vertexBuffer.memory);
+	vkUnmapMemory(device, indexBuffer.memory);
 }
 
 void Renderer::InitDescriptors()
@@ -249,6 +307,9 @@ void Renderer::Shutdown()
 
 	vkDestroyBuffer(device, m_VertexBuffer.handle, nullptr);
 	vkFreeMemory(device, m_VertexBuffer.memory, nullptr);
+
+	vkDestroyBuffer(device, m_VertexBufferCircle.handle, nullptr);
+	vkFreeMemory(device, m_VertexBufferCircle.memory, nullptr);
 
 	vkDestroyBuffer(device, m_IndexBuffer.handle, nullptr);
 	vkFreeMemory(device, m_IndexBuffer.memory, nullptr);
@@ -370,7 +431,7 @@ void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quad
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineCircle);
 
 	VkDeviceSize offset{ 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.handle, &offset);
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBufferCircle.handle, &offset);
 	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.handle, offset, VK_INDEX_TYPE_UINT16);
 
 	m_PushConstantsCircle.transform = glm::translate(glm::mat4(1.0f), glm::vec3(quadPosition, 0.f))
