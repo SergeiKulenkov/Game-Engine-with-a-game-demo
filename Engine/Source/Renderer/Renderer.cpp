@@ -43,65 +43,64 @@ void Renderer::Init()
 	InitDescriptors();
 
 	//  TODO: implement a pipeline builder for this
-	InitPipeline(&m_Pipeline, &m_Layout, ObjectType::TEXTURED, 2, rectangleVertexShaderPath, rectangleFragmentShaderPath);
+	//InitPipeline(&m_Pipeline, &m_Layout, ObjectType::TEXTURED, 2, rectangleVertexShaderPath, rectangleFragmentShaderPath);
 	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, ObjectType::PRIMITIVE_CIRCLE, 3, circleVertexShaderPath, circleFragmentShaderPath);
 
-	const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0 };
+	const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0,
+											4, 5, 6, 6, 7, 4 };
 	{
-		Vertex newVertex;
-		std::vector<Vertex> vertices;
-		vertices.reserve(vertexNumberForRectangle);
+		//Vertex newVertex;
+		//std::vector<Vertex> vertices;
+		//vertices.reserve(vertexNumberForRectangle);
 
-		newVertex.position = glm::vec2(-0.5f, -0.5f);
-		newVertex.textureCoord = glm::vec2(0.0f, 0.0f);
-		//newVertex.colour = glm::vec3(161.f / 255.f, 80.f / 255.f, 230.f / 255.f);
-		vertices.emplace_back(newVertex);
+		//newVertex.position = glm::vec2(-0.5f, -0.5f);
+		//newVertex.textureCoord = glm::vec2(0.0f, 0.0f);
+		//vertices.emplace_back(newVertex);
 
-		newVertex.position = glm::vec2(-0.5f, 0.5f);
-		newVertex.textureCoord = glm::vec2(0.0f, 1.0f);
-		//newVertex.colour = glm::vec3(252.f / 255.f, 195.f / 255.f, 40.f / 255.f);
-		vertices.emplace_back(newVertex);
+		//newVertex.position = glm::vec2(-0.5f, 0.5f);
+		//newVertex.textureCoord = glm::vec2(0.0f, 1.0f);
+		//vertices.emplace_back(newVertex);
 
-		newVertex.position = glm::vec2(0.5f, 0.5f);
-		newVertex.textureCoord = glm::vec2(1.0f, 1.0f);
-		//newVertex.colour = glm::vec3(45.f / 255.f, 115.f / 255.f, 225.f / 255.f);
-		vertices.emplace_back(newVertex);
+		//newVertex.position = glm::vec2(0.5f, 0.5f);
+		//newVertex.textureCoord = glm::vec2(1.0f, 1.0f);
+		//vertices.emplace_back(newVertex);
 
-		newVertex.position = glm::vec2(0.5f, -0.5f);
-		newVertex.textureCoord = glm::vec2(1.0f, 0.0f);
-		//newVertex.colour = glm::vec3(0.f / 255.f, 255.f / 255.f, 0.f / 255.f);
-		vertices.emplace_back(newVertex);
+		//newVertex.position = glm::vec2(0.5f, -0.5f);
+		//newVertex.textureCoord = glm::vec2(1.0f, 0.0f);
+		//vertices.emplace_back(newVertex);
 
-		InitBuffers(m_VertexBuffer, vertices, m_IndexBuffer, indices);
+		//InitBuffers(m_VertexBuffer, vertices, m_IndexBuffer, indices);
 	}
 	{
 		VertexCircle newVertex;
 		std::vector<VertexCircle> vertices;
-		vertices.reserve(vertexNumberForRectangle);
+		vertices.reserve(vertexNumberForRectangle * 2);
 
-		newVertex.position = glm::vec2(-0.5f, -0.5f);
-		newVertex.thickness = 0.05f;
-		newVertex.colour = glm::vec3(161.f / 255.f, 80.f / 255.f, 230.f / 255.f);
-		vertices.emplace_back(newVertex);
+		for (uint16_t i = 0; i < 2; i++)
+		{
+			const float offset = (float)i * 0.2f;
+			newVertex.position = glm::vec2(-0.5f, -0.5f) + offset;
+			newVertex.thickness = 0.05f;
+			newVertex.colour = glm::vec3(161.f / 255.f, 80.f / 255.f, 230.f / 255.f);
+			vertices.emplace_back(newVertex);
 
-		newVertex.position = glm::vec2(-0.5f, 0.5f);
-		newVertex.thickness = 0.05f;
-		newVertex.colour = glm::vec3(252.f / 255.f, 195.f / 255.f, 40.f / 255.f);
-		vertices.emplace_back(newVertex);
+			newVertex.position = glm::vec2(-0.5f, 0.5f) + offset;
+			newVertex.thickness = 0.05f;
+			newVertex.colour = glm::vec3(252.f / 255.f, 195.f / 255.f, 40.f / 255.f);
+			vertices.emplace_back(newVertex);
 
-		newVertex.position = glm::vec2(0.5f, 0.5f);
-		newVertex.thickness = 0.05f;
-		newVertex.colour = glm::vec3(45.f / 255.f, 115.f / 255.f, 225.f / 255.f);
-		vertices.emplace_back(newVertex);
+			newVertex.position = glm::vec2(0.5f, 0.5f) + offset;
+			newVertex.thickness = 0.05f;
+			newVertex.colour = glm::vec3(45.f / 255.f, 115.f / 255.f, 225.f / 255.f);
+			vertices.emplace_back(newVertex);
 
-		newVertex.position = glm::vec2(0.5f, -0.5f);
-		newVertex.thickness = 0.05f;
-		newVertex.colour = glm::vec3(0.f / 255.f, 255.f / 255.f, 0.f / 255.f);
-		vertices.emplace_back(newVertex);
+			newVertex.position = glm::vec2(0.5f, -0.5f) + offset;
+			newVertex.thickness = 0.05f;
+			newVertex.colour = glm::vec3(0.f / 255.f, 255.f / 255.f, 0.f / 255.f);
+			vertices.emplace_back(newVertex);
+		}
 
-		// the function takes vertices of type Vertex
-		// doesn't work here cause index buffer has already been initialized
-		//InitBuffers(m_VertexBufferCircle, vertices, m_IndexBuffer, indices);
+		InitBuffers(m_VertexBufferCircle, vertices, m_IndexBuffer, indices);
 	}
 }
 
@@ -115,51 +114,51 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	pushConstantRange.size = sizeof(PushConstants);
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
-	VkPipelineLayoutCreateInfo layout_info{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
-	layout_info.pPushConstantRanges = &pushConstantRange;
-	layout_info.pushConstantRangeCount = 1;
-	layout_info.setLayoutCount = 1;
-	layout_info.pSetLayouts = &m_DescriptorSetLayout;
-	check_vk_result(vkCreatePipelineLayout(device, &layout_info, nullptr, layout));
+	VkPipelineLayoutCreateInfo layoutInfo{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
+	layoutInfo.pPushConstantRanges = &pushConstantRange;
+	layoutInfo.pushConstantRangeCount = 1;
+	layoutInfo.setLayoutCount = 1;
+	layoutInfo.pSetLayouts = &m_DescriptorSetLayout;
+	check_vk_result(vkCreatePipelineLayout(device, &layoutInfo, nullptr, layout));
 
-	VkPipelineInputAssemblyStateCreateInfo input_assembly{ VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-	input_assembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	VkPipelineInputAssemblyStateCreateInfo inputAssembly{ VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
+	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 
-	VkVertexInputBindingDescription binding_description;
-	binding_description.binding = 0;
-	binding_description.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	VkVertexInputBindingDescription bindingDescription;
+	bindingDescription.binding = 0;
+	bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 	std::vector<VkVertexInputAttributeDescription> attribute_descriptions(count);
 	switch (type)
 	{
 		case ObjectType::TEXTURED:
-			binding_description.stride = sizeof(Vertex);
+			bindingDescription.stride = sizeof(Vertex);
 
 			attribute_descriptions[0].location = 0;
-			attribute_descriptions[0].binding = binding_description.binding;
+			attribute_descriptions[0].binding = bindingDescription.binding;
 			attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
 			attribute_descriptions[0].offset = 0;
 
 			attribute_descriptions[1].location = 1;
-			attribute_descriptions[1].binding = binding_description.binding;
+			attribute_descriptions[1].binding = bindingDescription.binding;
 			attribute_descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
 			attribute_descriptions[1].offset = static_cast<uint32_t>(offsetof(Vertex, textureCoord));
 			break;
 		case ObjectType::PRIMITIVE_CIRCLE:
-			binding_description.stride = sizeof(VertexCircle);
+			bindingDescription.stride = sizeof(VertexCircle);
 
 			attribute_descriptions[0].location = 0;
-			attribute_descriptions[0].binding = binding_description.binding;
+			attribute_descriptions[0].binding = bindingDescription.binding;
 			attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
 			attribute_descriptions[0].offset = 0;
 
 			attribute_descriptions[1].location = 1;
-			attribute_descriptions[1].binding = binding_description.binding;
+			attribute_descriptions[1].binding = bindingDescription.binding;
 			attribute_descriptions[1].format = VK_FORMAT_R32_SFLOAT;
 			attribute_descriptions[1].offset = static_cast<uint32_t>(offsetof(VertexCircle, thickness));
 
 			attribute_descriptions[2].location = 2;
-			attribute_descriptions[2].binding = binding_description.binding;
+			attribute_descriptions[2].binding = bindingDescription.binding;
 			attribute_descriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
 			attribute_descriptions[2].offset = static_cast<uint32_t>(offsetof(VertexCircle, colour));
 			break;
@@ -171,7 +170,7 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
 	vertexInputInfo.vertexBindingDescriptionCount = 1;
-	vertexInputInfo.pVertexBindingDescriptions = &binding_description;
+	vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
 	vertexInputInfo.vertexAttributeDescriptionCount = count;
 	vertexInputInfo.pVertexAttributeDescriptions = attribute_descriptions.data();
 
@@ -180,18 +179,22 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	raster.frontFace = VK_FRONT_FACE_CLOCKWISE;
 	raster.lineWidth = 1.0f;
 
-	VkPipelineColorBlendAttachmentState blend_attachment{};
-	blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+	VkPipelineColorBlendAttachmentState blendAttachment{};
+	blendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 
 	VkPipelineColorBlendStateCreateInfo blend{ VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
 	blend.attachmentCount = 1;
-	blend.pAttachments = &blend_attachment;
+	blend.pAttachments = &blendAttachment;
 
 	VkPipelineViewportStateCreateInfo viewport{ VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
 	viewport.viewportCount = 1;
 	viewport.scissorCount = 1;
 
-	VkPipelineDepthStencilStateCreateInfo depth_stencil{ VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
+	VkPipelineDepthStencilStateCreateInfo depthStencil{ VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
+	depthStencil.depthTestEnable = VK_TRUE;
+	depthStencil.depthWriteEnable = VK_TRUE;
+	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	depthStencil.stencilTestEnable = VK_FALSE;
 
 	VkPipelineMultisampleStateCreateInfo multisample{ VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
 	multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -217,11 +220,11 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	pipe.stageCount = static_cast<uint32_t>(shader_stages.size());
 	pipe.pStages = shader_stages.data();
 	pipe.pVertexInputState = &vertexInputInfo;
-	pipe.pInputAssemblyState = &input_assembly;
+	pipe.pInputAssemblyState = &inputAssembly;
 	pipe.pViewportState = &viewport;
 	pipe.pRasterizationState = &raster;
 	pipe.pMultisampleState = &multisample;
-	pipe.pDepthStencilState = &depth_stencil;
+	pipe.pDepthStencilState = &depthStencil;
 	pipe.pColorBlendState = &blend;
 	pipe.pDynamicState = &dynamic;
 	pipe.layout = *layout;
@@ -232,7 +235,7 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	vkDestroyShaderModule(device, shader_stages[1].module, nullptr);
 }
 
-void Renderer::InitBuffers(Buffer& vertexBuffer, const std::vector<Vertex>& vertices, Buffer& indexBuffer, const std::vector<uint16_t>& indices)
+void Renderer::InitBuffers(Buffer& vertexBuffer, const std::vector<VertexCircle>& vertices, Buffer& indexBuffer, const std::vector<uint16_t>& indices)
 {
 	VkDevice device = Engine::GetDevice();
 	uint64_t verticesMemory = sizeof(vertices[0]) * vertices.size();
@@ -381,7 +384,7 @@ void Renderer::BeginScene(const Camera& camera)
 	float viewportWidth = static_cast<float>(windowData->Width);
 	float viewportHeight = static_cast<float>(windowData->Height);
 	
-	m_PushConstants.viewProjection = camera.GetViewProjection();
+	//m_PushConstants.viewProjection = camera.GetViewProjection();
 	m_PushConstantsCircle.viewProjection = camera.GetViewProjection();
 
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
@@ -401,22 +404,15 @@ void Renderer::BeginScene(const Camera& camera)
 
 void Renderer::Render(const Scene& scene)
 {
-	// seems like imgui maps all objects into one buffer
-	// in ImGui_ImplVulkan_RenderDrawData():
-	// align buffer size for both vertex and index buffers
-	// Create of resize for both
-	// map memory, memcpy using the draw lists, flush, unmap
-	// then ImGui_ImplVulkan_SetupRenderState() does vk cmd bind buffers and vk cmd set viewport
-	// and vk cmd push constants and vk cmd bind descriptor sets
-	// then a loop through all draw lists with vk cmd set scissor and finally vk cmd draw indexed
-
 	BeginScene(scene.GetCamera());
+	// bind vertex and index buffers
+	// for that need to have two copies of those cause there are two frames in flight
 
 	//m_QuadPosition.x += 0.0025f;
 	//m_QuadAngle += 0.05f;
 	//m_QuadScale.x += 0.005f;
 
-	RenderRectangle(m_QuadPosition, m_QuadScale, m_QuadAngle);
+	//RenderRectangle(m_QuadPosition, m_QuadScale, m_QuadAngle);
 	RenderCircle(glm::vec2(-0.7f, -0.4f), glm::vec2(1.f, 1.f), 0.f);
 
 	// get entities from Scene? or get Sprites from Scene?
@@ -439,7 +435,8 @@ void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quad
 									* glm::scale(glm::mat4(1.f), glm::vec3(quadScale.x, quadScale.y, 1.f));
 	vkCmdPushConstants(commandBuffer, m_LayoutCircle, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstantsCircle);
 
-	vkCmdDrawIndexed(commandBuffer, 6, 1, 0, 0, 0);
+	// batch render 2 circles
+	vkCmdDrawIndexed(commandBuffer, 12, 1, 0, 0, 0);
 }
 
 void Renderer::RenderRectangle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle)

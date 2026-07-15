@@ -74,7 +74,7 @@ private:
 
 	void Init();
 	void InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, const ObjectType type, const uint16_t count, const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-	void InitBuffers(Buffer& vertexBuffer, const std::vector<Vertex>& vertices, Buffer& indexBuffer, const std::vector<uint16_t>& indices);
+	void InitBuffers(Buffer& vertexBuffer, const std::vector<VertexCircle>& vertices, Buffer& indexBuffer, const std::vector<uint16_t>& indices);
 	void InitDescriptors();
 
 	void Shutdown();
