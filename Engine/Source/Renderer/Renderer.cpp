@@ -1,6 +1,5 @@
 #include "Renderer.h"
 
-#include <array>
 #include <fstream>
 #include <imgui_impl_vulkan.h>
 #include "glm/gtc/matrix_transform.hpp"
@@ -46,8 +45,8 @@ void Renderer::Init()
 	//InitPipeline(&m_Pipeline, &m_Layout, ObjectType::TEXTURED, 2, rectangleVertexShaderPath, rectangleFragmentShaderPath);
 	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, ObjectType::PRIMITIVE_CIRCLE, 3, circleVertexShaderPath, circleFragmentShaderPath);
 
-	const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0,
-											4, 5, 6, 6, 7, 4 };
+	//const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0,
+	//										4, 5, 6, 6, 7, 4 };
 	{
 		//Vertex newVertex;
 		//std::vector<Vertex> vertices;
@@ -70,37 +69,6 @@ void Renderer::Init()
 		//vertices.emplace_back(newVertex);
 
 		//InitBuffers(m_VertexBuffer, vertices, m_IndexBuffer, indices);
-	}
-	{
-		VertexCircle newVertex;
-		std::vector<VertexCircle> vertices;
-		vertices.reserve(vertexNumberForRectangle * 2);
-
-		for (uint16_t i = 0; i < 2; i++)
-		{
-			const float offset = (float)i * 0.2f;
-			newVertex.position = glm::vec2(-0.5f, -0.5f) + offset;
-			newVertex.thickness = 0.05f;
-			newVertex.colour = glm::vec3(161.f / 255.f, 80.f / 255.f, 230.f / 255.f);
-			vertices.emplace_back(newVertex);
-
-			newVertex.position = glm::vec2(-0.5f, 0.5f) + offset;
-			newVertex.thickness = 0.05f;
-			newVertex.colour = glm::vec3(252.f / 255.f, 195.f / 255.f, 40.f / 255.f);
-			vertices.emplace_back(newVertex);
-
-			newVertex.position = glm::vec2(0.5f, 0.5f) + offset;
-			newVertex.thickness = 0.05f;
-			newVertex.colour = glm::vec3(45.f / 255.f, 115.f / 255.f, 225.f / 255.f);
-			vertices.emplace_back(newVertex);
-
-			newVertex.position = glm::vec2(0.5f, -0.5f) + offset;
-			newVertex.thickness = 0.05f;
-			newVertex.colour = glm::vec3(0.f / 255.f, 255.f / 255.f, 0.f / 255.f);
-			vertices.emplace_back(newVertex);
-		}
-
-		InitBuffers(m_VertexBufferCircle, vertices, m_IndexBuffer, indices);
 	}
 }
 
@@ -311,11 +279,17 @@ void Renderer::Shutdown()
 	vkDestroyBuffer(device, m_VertexBuffer.handle, nullptr);
 	vkFreeMemory(device, m_VertexBuffer.memory, nullptr);
 
-	vkDestroyBuffer(device, m_VertexBufferCircle.handle, nullptr);
-	vkFreeMemory(device, m_VertexBufferCircle.memory, nullptr);
+	for (Buffer& buffer : m_VertexBufferCircle)
+	{
+		vkDestroyBuffer(device, buffer.handle, nullptr);
+		vkFreeMemory(device, buffer.memory, nullptr);
+	}
 
-	vkDestroyBuffer(device, m_IndexBuffer.handle, nullptr);
-	vkFreeMemory(device, m_IndexBuffer.memory, nullptr);
+	for (Buffer& buffer : m_IndexBuffer)
+	{
+		vkDestroyBuffer(device, buffer.handle, nullptr);
+		vkFreeMemory(device, buffer.memory, nullptr);
+	}
 }
 
 void Renderer::CreateOrResizeBuffer(Buffer& buffer, uint64_t newSize)
@@ -405,8 +379,6 @@ void Renderer::BeginScene(const Camera& camera)
 void Renderer::Render(const Scene& scene)
 {
 	BeginScene(scene.GetCamera());
-	// bind vertex and index buffers
-	// for that need to have two copies of those cause there are two frames in flight
 
 	//m_QuadPosition.x += 0.0025f;
 	//m_QuadAngle += 0.05f;
@@ -423,12 +395,50 @@ void Renderer::Render(const Scene& scene)
 
 void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle)
 {
+	const uint32_t frameIndex = Engine::GetFrameIndex();
+
+	{
+		// TODO: add quad position to vertex
+		const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0,
+												4, 5, 6, 6, 7, 4 };
+		VertexCircle newVertex;
+		std::vector<VertexCircle> vertices;
+		// vertices for two objects
+		vertices.reserve(vertexNumberForRectangle * 2);
+
+		for (uint16_t i = 0; i < 2; i++)
+		{
+			const float offset = (float)i * 0.2f;
+			newVertex.position = glm::vec2(-0.5f, -0.5f) + offset;
+			newVertex.thickness = 0.05f;
+			newVertex.colour = glm::vec3(161.f / 255.f, 80.f / 255.f, 230.f / 255.f);
+			vertices.emplace_back(newVertex);
+
+			newVertex.position = glm::vec2(-0.5f, 0.5f) + offset;
+			newVertex.thickness = 0.05f;
+			newVertex.colour = glm::vec3(252.f / 255.f, 195.f / 255.f, 40.f / 255.f);
+			vertices.emplace_back(newVertex);
+
+			newVertex.position = glm::vec2(0.5f, 0.5f) + offset;
+			newVertex.thickness = 0.05f;
+			newVertex.colour = glm::vec3(45.f / 255.f, 115.f / 255.f, 225.f / 255.f);
+			vertices.emplace_back(newVertex);
+
+			newVertex.position = glm::vec2(0.5f, -0.5f) + offset;
+			newVertex.thickness = 0.05f;
+			newVertex.colour = glm::vec3(0.f / 255.f, 255.f / 255.f, 0.f / 255.f);
+			vertices.emplace_back(newVertex);
+		}
+
+		InitBuffers(m_VertexBufferCircle[frameIndex], vertices, m_IndexBuffer[frameIndex], indices);
+	}
+
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineCircle);
 
 	VkDeviceSize offset{ 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBufferCircle.handle, &offset);
-	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.handle, offset, VK_INDEX_TYPE_UINT16);
+	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBufferCircle[frameIndex].handle, &offset);
+	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer[frameIndex].handle, offset, VK_INDEX_TYPE_UINT16);
 
 	m_PushConstantsCircle.transform = glm::translate(glm::mat4(1.0f), glm::vec3(quadPosition, 0.f))
 									* glm::eulerAngleZ(quadAngle)
@@ -446,7 +456,7 @@ void Renderer::RenderRectangle(const glm::vec2& quadPosition, const glm::vec2& q
 
 	VkDeviceSize offset{ 0 };
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.handle, &offset);
-	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer.handle, offset, VK_INDEX_TYPE_UINT16);
+	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer[0].handle, offset, VK_INDEX_TYPE_UINT16);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &m_DescriptorSet, 0, nullptr);
 
 	// TODO: apply Sprite's layer as Z position? or just sort them by position?

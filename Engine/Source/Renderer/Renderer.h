@@ -3,6 +3,7 @@
 #include <string>
 #include <filesystem>
 #include <vector>
+#include <array>
 #include <memory>
 
 #include "glm/glm.hpp"
@@ -106,12 +107,12 @@ private:
 	VkDescriptorSet m_DescriptorSet = nullptr;
 	PushConstants m_PushConstants = {};
 	Buffer m_VertexBuffer;
-	Buffer m_IndexBuffer;
+	std::array<Buffer, 2> m_IndexBuffer;
 
 	VkPipeline m_PipelineCircle = nullptr;
 	VkPipelineLayout m_LayoutCircle = nullptr;
 	PushConstants m_PushConstantsCircle = {};
-	Buffer m_VertexBufferCircle;
+	std::array<Buffer, 2> m_VertexBufferCircle;
 
 	glm::vec2 m_QuadPosition = glm::vec2(0.4f, 0.6f);
 	float m_QuadAngle = 0.f;

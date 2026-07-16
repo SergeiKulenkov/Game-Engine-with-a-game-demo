@@ -608,6 +608,11 @@ VkCommandBuffer Engine::GetActiveCommandBuffer()
     return g_ActiveCommandBuffer;
 }
 
+uint32_t Engine::GetFrameIndex()
+{
+    return s_CurrentFrameIndex;
+}
+
 VkDescriptorSet Engine::AllocateSecriptorSet(VkDescriptorSetLayout descriptorSetLayout)
 {
     VkDescriptorSet result;

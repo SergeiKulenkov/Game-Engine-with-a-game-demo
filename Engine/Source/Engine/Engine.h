@@ -40,6 +40,7 @@ public:
 	static VkPhysicalDevice GetPhysicalDevice();
 	static VkDevice GetDevice();
 	static VkCommandBuffer GetActiveCommandBuffer();
+	static uint32_t GetFrameIndex();
 
 	static VkDescriptorSet AllocateSecriptorSet(VkDescriptorSetLayout descriptorSetLayout);
 	static void AllocateSecriptorSets(VkDescriptorSetLayout descriptorSetLayout, const uint32_t count, std::vector<VkDescriptorSet>& result);
