@@ -68,7 +68,7 @@ void Player::Update(float deltaTime)
 	{
 		const float cameraSpeed = 5.f;
 		Camera& camera = m_Scene->GetCamera();
-		camera.GetPosition() += glm::vec3(input.x * cameraSpeed * deltaTime, input.y * cameraSpeed * deltaTime, 0.f);
+		camera.GetPosition() += glm::vec3(input.x * cameraSpeed * deltaTime, -input.y * cameraSpeed * deltaTime, 0.f);
 	}
 }
 

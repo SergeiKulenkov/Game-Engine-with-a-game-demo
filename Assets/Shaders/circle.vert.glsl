@@ -11,12 +11,11 @@ layout(location = 2) out float out_thickness;
 layout(push_constant) uniform PushConstants
 {
     mat4 ViewProjection;
-    mat4 Transform;
 } u_PushConstants;
 
 void main()
 {
-    gl_Position = u_PushConstants.ViewProjection * u_PushConstants.Transform * vec4(inVertexPosition, 0.0, 1.0);
+    gl_Position = u_PushConstants.ViewProjection * vec4(inVertexPosition, 0.0, 1.0);
     
     out_pos = inVertexPosition * 2.0;
     out_color = inColor;

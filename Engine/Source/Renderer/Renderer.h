@@ -26,14 +26,6 @@ struct Buffer
 
 ////////////////////
 
-struct PushConstants
-{
-	glm::mat4 viewProjection = glm::mat4();
-	glm::mat4 transform = glm::mat4();
-};
-
-////////////////////
-
 struct Vertex
 {
 	glm::vec2 position = glm::vec2(0.f, 0.f);
@@ -66,16 +58,17 @@ public:
 	void Render(const Scene& scene);
 
 	void RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle);
+	void RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale);
 	void RenderRectangle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle);
 
-	void DrawImageQuad();
+	//void DrawImageQuad();
 
 private:
 	Renderer() {}
 
 	void Init();
 	void InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, const ObjectType type, const uint16_t count, const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-	void InitBuffers(Buffer& vertexBuffer, const std::vector<VertexCircle>& vertices, Buffer& indexBuffer, const std::vector<uint16_t>& indices);
+	void InitBuffers(Buffer& vertexBuffer, VertexCircle* vertices, VkDeviceSize vertexMemory, Buffer& indexBuffer, uint16_t* indices, VkDeviceSize indeexMemory);
 	void InitDescriptors();
 
 	void Shutdown();
@@ -85,10 +78,13 @@ private:
 	VkShaderModule LoadShaderModule(const std::filesystem::path& path);
 
 	void BeginScene(const Camera& camera);
+	void EndScene();
 
 	////////////////////
 
 	static constexpr uint16_t vertexNumberForRectangle = 4;
+	static constexpr uint16_t maxCircles = 1000;
+	static constexpr uint16_t maxIndices = maxCircles * 6;
 
 	static inline const std::string shaderFolderPath = "../Assets/Shaders/";
 	static inline const std::string rectangleVertexShaderPath = shaderFolderPath + "rectangle.vert.spirv";
@@ -105,13 +101,11 @@ private:
 	VkPipelineLayout m_Layout = nullptr;
 	VkDescriptorSetLayout m_DescriptorSetLayout = nullptr;
 	VkDescriptorSet m_DescriptorSet = nullptr;
-	PushConstants m_PushConstants = {};
 	Buffer m_VertexBuffer;
 	std::array<Buffer, 2> m_IndexBuffer;
 
 	VkPipeline m_PipelineCircle = nullptr;
 	VkPipelineLayout m_LayoutCircle = nullptr;
-	PushConstants m_PushConstantsCircle = {};
 	std::array<Buffer, 2> m_VertexBufferCircle;
 
 	glm::vec2 m_QuadPosition = glm::vec2(0.4f, 0.6f);
@@ -119,6 +113,12 @@ private:
 	glm::vec2 m_QuadScale = glm::vec2(1.f, 1.f); // also like a size for primitives
 
 	std::shared_ptr<Image> m_Image;
+
+	VertexCircle* m_VerticesCirclePtr = nullptr;
+	VertexCircle* m_VerticesCircleBase = nullptr;
+	uint16_t* m_Indices = nullptr;
+	uint16_t m_CirclesVertexCount = 0;
+	uint16_t m_CirclesIndexCount = 0;
 
 	friend class Engine;
 };

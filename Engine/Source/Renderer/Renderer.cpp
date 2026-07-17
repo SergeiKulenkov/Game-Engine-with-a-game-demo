@@ -45,30 +45,21 @@ void Renderer::Init()
 	//InitPipeline(&m_Pipeline, &m_Layout, ObjectType::TEXTURED, 2, rectangleVertexShaderPath, rectangleFragmentShaderPath);
 	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, ObjectType::PRIMITIVE_CIRCLE, 3, circleVertexShaderPath, circleFragmentShaderPath);
 
-	//const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0,
-	//										4, 5, 6, 6, 7, 4 };
+	m_VerticesCircleBase = new VertexCircle[maxCircles];
+	m_Indices = new uint16_t[maxIndices];
+
+	uint16_t offset = 0;
+	for (uint16_t i = 0; i < maxIndices; i += 6)
 	{
-		//Vertex newVertex;
-		//std::vector<Vertex> vertices;
-		//vertices.reserve(vertexNumberForRectangle);
+		m_Indices[i]     = offset;
+		m_Indices[i + 1] = offset + 2;
+		m_Indices[i + 2] = offset + 1;
 
-		//newVertex.position = glm::vec2(-0.5f, -0.5f);
-		//newVertex.textureCoord = glm::vec2(0.0f, 0.0f);
-		//vertices.emplace_back(newVertex);
+		m_Indices[i + 3] = offset;
+		m_Indices[i + 4] = offset + 3;
+		m_Indices[i + 5] = offset + 2;
 
-		//newVertex.position = glm::vec2(-0.5f, 0.5f);
-		//newVertex.textureCoord = glm::vec2(0.0f, 1.0f);
-		//vertices.emplace_back(newVertex);
-
-		//newVertex.position = glm::vec2(0.5f, 0.5f);
-		//newVertex.textureCoord = glm::vec2(1.0f, 1.0f);
-		//vertices.emplace_back(newVertex);
-
-		//newVertex.position = glm::vec2(0.5f, -0.5f);
-		//newVertex.textureCoord = glm::vec2(1.0f, 0.0f);
-		//vertices.emplace_back(newVertex);
-
-		//InitBuffers(m_VertexBuffer, vertices, m_IndexBuffer, indices);
+		offset += 4;
 	}
 }
 
@@ -79,7 +70,7 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 
 	VkPushConstantRange pushConstantRange;
 	pushConstantRange.offset = 0;
-	pushConstantRange.size = sizeof(PushConstants);
+	pushConstantRange.size = sizeof(glm::mat4);
 	pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
 	VkPipelineLayoutCreateInfo layoutInfo{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
@@ -144,7 +135,7 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 
 	VkPipelineRasterizationStateCreateInfo raster{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
 	raster.cullMode = VK_CULL_MODE_BACK_BIT;
-	raster.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	raster.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	raster.lineWidth = 1.0f;
 
 	VkPipelineColorBlendAttachmentState blendAttachment{};
@@ -203,25 +194,23 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	vkDestroyShaderModule(device, shader_stages[1].module, nullptr);
 }
 
-void Renderer::InitBuffers(Buffer& vertexBuffer, const std::vector<VertexCircle>& vertices, Buffer& indexBuffer, const std::vector<uint16_t>& indices)
+void Renderer::InitBuffers(Buffer& vertexBuffer, VertexCircle* vertices, VkDeviceSize vertexMemory, Buffer& indexBuffer, uint16_t* indices, VkDeviceSize indexMemory)
 {
 	VkDevice device = Engine::GetDevice();
-	uint64_t verticesMemory = sizeof(vertices[0]) * vertices.size();
-	uint64_t indicesMemory = sizeof(uint16_t) * indices.size();
 
 	vertexBuffer.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-	CreateOrResizeBuffer(vertexBuffer, verticesMemory);
+	CreateOrResizeBuffer(vertexBuffer, vertexMemory);
 
 	indexBuffer.usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-	CreateOrResizeBuffer(indexBuffer, indicesMemory);
+	CreateOrResizeBuffer(indexBuffer, indexMemory);
 
 	void* vbMemory;
-	check_vk_result(vkMapMemory(device, vertexBuffer.memory, 0, verticesMemory, 0, &vbMemory));
-	memcpy(vbMemory, vertices.data(), static_cast<size_t>(verticesMemory));
+	check_vk_result(vkMapMemory(device, vertexBuffer.memory, 0, vertexMemory, 0, &vbMemory));
+	memcpy(vbMemory, vertices, static_cast<size_t>(vertexMemory));
 
 	uint16_t* ibMemory;
-	check_vk_result(vkMapMemory(device, indexBuffer.memory, 0, indicesMemory, 0, (void**)&ibMemory));
-	memcpy(ibMemory, indices.data(), static_cast<size_t>(indicesMemory));
+	check_vk_result(vkMapMemory(device, indexBuffer.memory, 0, indexMemory, 0, (void**)&ibMemory));
+	memcpy(ibMemory, indices, static_cast<size_t>(indexMemory));
 
 	VkMappedMemoryRange range[2] = {};
 	range[0].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
@@ -354,18 +343,22 @@ VkShaderModule Renderer::LoadShaderModule(const std::filesystem::path& path)
 
 void Renderer::BeginScene(const Camera& camera)
 {
+	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	auto windowData = GetWindowData();
 	float viewportWidth = static_cast<float>(windowData->Width);
 	float viewportHeight = static_cast<float>(windowData->Height);
-	
-	//m_PushConstants.viewProjection = camera.GetViewProjection();
-	m_PushConstantsCircle.viewProjection = camera.GetViewProjection();
 
-	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
+	m_CirclesIndexCount = 0;
+	m_CirclesVertexCount = 0;
+	m_VerticesCirclePtr = m_VerticesCircleBase;
+
+	// also setup scale and translation like in imgui?
+	const glm::mat4 viewProjection = camera.GetViewProjection();
+	vkCmdPushConstants(commandBuffer, m_LayoutCircle, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &viewProjection);
+
 	VkViewport vp{};
-	vp.y = viewportHeight;
 	vp.width = viewportWidth;
-	vp.height = -viewportHeight;
+	vp.height = viewportHeight;
 	vp.minDepth = 0.0f;
 	vp.maxDepth = 1.0f;
 	vkCmdSetViewport(commandBuffer, 0, 1, &vp);
@@ -376,62 +369,13 @@ void Renderer::BeginScene(const Camera& camera)
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 }
 
-void Renderer::Render(const Scene& scene)
-{
-	BeginScene(scene.GetCamera());
-
-	//m_QuadPosition.x += 0.0025f;
-	//m_QuadAngle += 0.05f;
-	//m_QuadScale.x += 0.005f;
-
-	//RenderRectangle(m_QuadPosition, m_QuadScale, m_QuadAngle);
-	RenderCircle(glm::vec2(-0.7f, -0.4f), glm::vec2(1.f, 1.f), 0.f);
-
-	// get entities from Scene? or get Sprites from Scene?
-	// what about drawing debug primitives? then get all entities to pass this* to them?
-	// for rendering image quads just need some data from a Sprite
-	// and also need Entity's tranform for position and scale
-}
-
-void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle)
+void Renderer::EndScene()
 {
 	const uint32_t frameIndex = Engine::GetFrameIndex();
 
-	{
-		// TODO: add quad position to vertex
-		const std::vector<uint16_t> indices = { 0, 1, 2, 2, 3, 0,
-												4, 5, 6, 6, 7, 4 };
-		VertexCircle newVertex;
-		std::vector<VertexCircle> vertices;
-		// vertices for two objects
-		vertices.reserve(vertexNumberForRectangle * 2);
-
-		for (uint16_t i = 0; i < 2; i++)
-		{
-			const float offset = (float)i * 0.2f;
-			newVertex.position = glm::vec2(-0.5f, -0.5f) + offset;
-			newVertex.thickness = 0.05f;
-			newVertex.colour = glm::vec3(161.f / 255.f, 80.f / 255.f, 230.f / 255.f);
-			vertices.emplace_back(newVertex);
-
-			newVertex.position = glm::vec2(-0.5f, 0.5f) + offset;
-			newVertex.thickness = 0.05f;
-			newVertex.colour = glm::vec3(252.f / 255.f, 195.f / 255.f, 40.f / 255.f);
-			vertices.emplace_back(newVertex);
-
-			newVertex.position = glm::vec2(0.5f, 0.5f) + offset;
-			newVertex.thickness = 0.05f;
-			newVertex.colour = glm::vec3(45.f / 255.f, 115.f / 255.f, 225.f / 255.f);
-			vertices.emplace_back(newVertex);
-
-			newVertex.position = glm::vec2(0.5f, -0.5f) + offset;
-			newVertex.thickness = 0.05f;
-			newVertex.colour = glm::vec3(0.f / 255.f, 255.f / 255.f, 0.f / 255.f);
-			vertices.emplace_back(newVertex);
-		}
-
-		InitBuffers(m_VertexBufferCircle[frameIndex], vertices, m_IndexBuffer[frameIndex], indices);
-	}
+	VkDeviceSize verticesMemory = m_CirclesVertexCount * sizeof(VertexCircle);
+	VkDeviceSize indicesMemory = m_CirclesIndexCount * sizeof(uint16_t);
+	InitBuffers(m_VertexBufferCircle[frameIndex], m_VerticesCircleBase, verticesMemory, m_IndexBuffer[frameIndex], m_Indices, indicesMemory);
 
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineCircle);
@@ -440,13 +384,59 @@ void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quad
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBufferCircle[frameIndex].handle, &offset);
 	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer[frameIndex].handle, offset, VK_INDEX_TYPE_UINT16);
 
-	m_PushConstantsCircle.transform = glm::translate(glm::mat4(1.0f), glm::vec3(quadPosition, 0.f))
-									* glm::eulerAngleZ(quadAngle)
-									* glm::scale(glm::mat4(1.f), glm::vec3(quadScale.x, quadScale.y, 1.f));
-	vkCmdPushConstants(commandBuffer, m_LayoutCircle, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstantsCircle);
+	vkCmdDrawIndexed(commandBuffer, m_CirclesIndexCount, 1, 0, 0, 0);
+}
 
-	// batch render 2 circles
-	vkCmdDrawIndexed(commandBuffer, 12, 1, 0, 0, 0);
+void Renderer::Render(const Scene& scene)
+{
+	BeginScene(scene.GetCamera());
+
+	//m_QuadPosition.x += 0.0025f;
+	//m_QuadAngle += 0.05f;
+	//m_QuadScale.x += 0.005f;
+
+	RenderCircle(glm::vec2(-0.7f, -0.4f), glm::vec2(1.f, 1.f));
+	RenderCircle(glm::vec2(0.7f, 0.4f), glm::vec2(1.f, 1.f));
+
+	// get entities from Scene? or get Sprites from Scene?
+	// what about drawing debug primitives? then get all entities to pass this* to them?
+	// for rendering image quads just need some data from a Sprite
+	// and also need Entity's tranform for position and scale
+
+	EndScene();
+}
+
+void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle)
+{	
+	// TODO: transoform to apply angle
+}
+
+void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale)
+{
+	// using the same coordinate system as in imgui - start at the top left corner
+	// TODO: use position and scale
+	m_VerticesCirclePtr->position = glm::vec2(-0.5f, -0.5f);
+	m_VerticesCirclePtr->thickness = 0.05f;
+	m_VerticesCirclePtr->colour = glm::vec3(161.f / 255.f, 80.f / 255.f, 230.f / 255.f);
+	m_VerticesCirclePtr++;
+
+	m_VerticesCirclePtr->position = glm::vec2(0.5f, -0.5f);
+	m_VerticesCirclePtr->thickness = 0.05f;
+	m_VerticesCirclePtr->colour = glm::vec3(252.f / 255.f, 195.f / 255.f, 40.f / 255.f);
+	m_VerticesCirclePtr++;
+
+	m_VerticesCirclePtr->position = glm::vec2(0.5f, 0.5f);
+	m_VerticesCirclePtr->thickness = 0.05f;
+	m_VerticesCirclePtr->colour = glm::vec3(45.f / 255.f, 115.f / 255.f, 225.f / 255.f);
+	m_VerticesCirclePtr++;
+
+	m_VerticesCirclePtr->position = glm::vec2(-0.5f, 0.5f);
+	m_VerticesCirclePtr->thickness = 0.05f;
+	m_VerticesCirclePtr->colour = glm::vec3(0.f / 255.f, 255.f / 255.f, 0.f / 255.f);
+	m_VerticesCirclePtr++;
+
+	m_CirclesVertexCount += 4;
+	m_CirclesIndexCount += 6;
 }
 
 void Renderer::RenderRectangle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle)
@@ -460,10 +450,10 @@ void Renderer::RenderRectangle(const glm::vec2& quadPosition, const glm::vec2& q
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &m_DescriptorSet, 0, nullptr);
 
 	// TODO: apply Sprite's layer as Z position? or just sort them by position?
-	m_PushConstants.transform = glm::translate(glm::mat4(1.0f), glm::vec3(quadPosition, 0.f))
-								* glm::eulerAngleZ(quadAngle)
-								* glm::scale(glm::mat4(1.f), glm::vec3(quadScale.x, quadScale.y, 1.f));
+	//m_PushConstants.transform = glm::translate(glm::mat4(1.0f), glm::vec3(quadPosition, 0.f))
+	//							* glm::eulerAngleZ(quadAngle)
+	//							* glm::scale(glm::mat4(1.f), glm::vec3(quadScale.x, quadScale.y, 1.f));
 
-	vkCmdPushConstants(commandBuffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstants);
+	//vkCmdPushConstants(commandBuffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstants);
 	vkCmdDrawIndexed(commandBuffer, 6, 1, 0, 0, 0);
 }
