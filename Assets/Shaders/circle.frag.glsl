@@ -1,6 +1,6 @@
 #version 460 core
 
-layout(location = 0) in vec3 inColor;
+layout(location = 0) in vec4 inColor;
 layout(location = 1) in vec2 inPosition;
 layout(location = 2) in float inThickness;
 
@@ -17,6 +17,6 @@ void main()
     if (alpha == 0.0)
         discard;
 
-    out_color = vec4(inColor, 1.0);
+    out_color = inColor;
     out_color.a *= alpha;
 }

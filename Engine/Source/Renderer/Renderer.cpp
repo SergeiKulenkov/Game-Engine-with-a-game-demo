@@ -52,12 +52,12 @@ void Renderer::Init()
 	for (uint16_t i = 0; i < maxIndices; i += 6)
 	{
 		m_Indices[i]     = offset;
-		m_Indices[i + 1] = offset + 2;
-		m_Indices[i + 2] = offset + 1;
+		m_Indices[i + 1] = offset + 1;
+		m_Indices[i + 2] = offset + 2;
 
 		m_Indices[i + 3] = offset;
-		m_Indices[i + 4] = offset + 3;
-		m_Indices[i + 5] = offset + 2;
+		m_Indices[i + 4] = offset + 2;
+		m_Indices[i + 5] = offset + 3;
 
 		offset += 4;
 	}
@@ -118,7 +118,7 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 
 			attribute_descriptions[2].location = 2;
 			attribute_descriptions[2].binding = bindingDescription.binding;
-			attribute_descriptions[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+			attribute_descriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 			attribute_descriptions[2].offset = static_cast<uint32_t>(offsetof(VertexCircle, colour));
 			break;
 		case ObjectType::PRIMITIVE_RECTANGLE:
@@ -134,7 +134,7 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	vertexInputInfo.pVertexAttributeDescriptions = attribute_descriptions.data();
 
 	VkPipelineRasterizationStateCreateInfo raster{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-	raster.cullMode = VK_CULL_MODE_BACK_BIT;
+	raster.cullMode = VK_CULL_MODE_NONE;
 	raster.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 	raster.lineWidth = 1.0f;
 
@@ -391,12 +391,14 @@ void Renderer::Render(const Scene& scene)
 {
 	BeginScene(scene.GetCamera());
 
-	//m_QuadPosition.x += 0.0025f;
-	//m_QuadAngle += 0.05f;
-	//m_QuadScale.x += 0.005f;
+	const std::array<glm::vec4, 4 > colours = { glm::vec4(161.f / 255.f, 80.f / 255.f, 230.f / 255.f, 1.0f),
+												glm::vec4(252.f / 255.f, 195.f / 255.f, 40.f / 255.f, 1.0f),
+												glm::vec4(45.f / 255.f, 115.f / 255.f, 225.f / 255.f, 1.0f),
+												glm::vec4(0.f / 255.f, 255.f / 255.f, 0.f / 255.f, 1.0f) };
 
-	RenderCircle(glm::vec2(-0.7f, -0.4f), glm::vec2(1.f, 1.f));
-	RenderCircle(glm::vec2(0.7f, 0.4f), glm::vec2(1.f, 1.f));
+	m_QuadPosition.x += 0.002f;
+	RenderCircle(m_QuadPosition, glm::vec2(1.f, 1.f), colours);
+	RenderCircle(glm::vec2(-0.3f, -0.5f), glm::vec2(1.f, 1.f), glm::vec4(0.75f, 0.75f, 0.0f, 1.0f));
 
 	// get entities from Scene? or get Sprites from Scene?
 	// what about drawing debug primitives? then get all entities to pass this* to them?
@@ -406,33 +408,56 @@ void Renderer::Render(const Scene& scene)
 	EndScene();
 }
 
-void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle)
-{	
-	// TODO: transoform to apply angle
+void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const glm::vec4 colour)
+{
+	const float thickness = 0.05f;
+	// using the same coordinate system as in imgui - start at the top left corner
+	// TODO: use position and scale with a transform?
+	m_VerticesCirclePtr->position = quadPosition;
+	m_VerticesCirclePtr->thickness = thickness;
+	m_VerticesCirclePtr->colour = colour;
+	m_VerticesCirclePtr++;
+
+	m_VerticesCirclePtr->position = glm::vec2(quadPosition.x + quadScale.x, quadPosition.y);
+	m_VerticesCirclePtr->thickness = thickness;
+	m_VerticesCirclePtr->colour = colour;
+	m_VerticesCirclePtr++;
+
+	m_VerticesCirclePtr->position = quadPosition + quadScale;
+	m_VerticesCirclePtr->thickness = thickness;
+	m_VerticesCirclePtr->colour = colour;
+	m_VerticesCirclePtr++;
+
+	m_VerticesCirclePtr->position = glm::vec2(quadPosition.x, quadPosition.y + quadScale.y);
+	m_VerticesCirclePtr->thickness = thickness;
+	m_VerticesCirclePtr->colour = colour;
+	m_VerticesCirclePtr++;
+
+	m_CirclesVertexCount += 4;
+	m_CirclesIndexCount += 6;
 }
 
-void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale)
+void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const std::array<glm::vec4, 4>& colours)
 {
-	// using the same coordinate system as in imgui - start at the top left corner
-	// TODO: use position and scale
-	m_VerticesCirclePtr->position = glm::vec2(-0.5f, -0.5f);
-	m_VerticesCirclePtr->thickness = 0.05f;
-	m_VerticesCirclePtr->colour = glm::vec3(161.f / 255.f, 80.f / 255.f, 230.f / 255.f);
+	const float thickness = 0.05f;
+	m_VerticesCirclePtr->position = quadPosition;
+	m_VerticesCirclePtr->thickness = thickness;
+	m_VerticesCirclePtr->colour = colours[0];
 	m_VerticesCirclePtr++;
 
-	m_VerticesCirclePtr->position = glm::vec2(0.5f, -0.5f);
-	m_VerticesCirclePtr->thickness = 0.05f;
-	m_VerticesCirclePtr->colour = glm::vec3(252.f / 255.f, 195.f / 255.f, 40.f / 255.f);
+	m_VerticesCirclePtr->position = glm::vec2(quadPosition.x + quadScale.x, quadPosition.y);
+	m_VerticesCirclePtr->thickness = thickness;
+	m_VerticesCirclePtr->colour = colours[1];
 	m_VerticesCirclePtr++;
 
-	m_VerticesCirclePtr->position = glm::vec2(0.5f, 0.5f);
-	m_VerticesCirclePtr->thickness = 0.05f;
-	m_VerticesCirclePtr->colour = glm::vec3(45.f / 255.f, 115.f / 255.f, 225.f / 255.f);
+	m_VerticesCirclePtr->position = quadPosition + quadScale;
+	m_VerticesCirclePtr->thickness = thickness;
+	m_VerticesCirclePtr->colour = colours[2];
 	m_VerticesCirclePtr++;
 
-	m_VerticesCirclePtr->position = glm::vec2(-0.5f, 0.5f);
-	m_VerticesCirclePtr->thickness = 0.05f;
-	m_VerticesCirclePtr->colour = glm::vec3(0.f / 255.f, 255.f / 255.f, 0.f / 255.f);
+	m_VerticesCirclePtr->position = glm::vec2(quadPosition.x, quadPosition.y + quadScale.y);
+	m_VerticesCirclePtr->thickness = thickness;
+	m_VerticesCirclePtr->colour = colours[3];
 	m_VerticesCirclePtr++;
 
 	m_CirclesVertexCount += 4;

@@ -38,7 +38,7 @@ struct VertexCircle
 {
 	glm::vec2 position = glm::vec2(0.f, 0.f);
 	float thickness = 0.5f;
-	glm::vec3 colour = glm::vec3(0.f, 0.f, 0.f);
+	glm::vec4 colour = glm::vec4(0.f, 0.f, 0.f, 1.0f);
 };
 
 ////////////////////
@@ -57,8 +57,9 @@ class Renderer
 public:
 	void Render(const Scene& scene);
 
-	void RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle);
-	void RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale);
+	void RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const glm::vec4 colour);
+	void RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const std::array<glm::vec4, 4>& colours);
+
 	void RenderRectangle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle);
 
 	//void DrawImageQuad();
@@ -108,7 +109,7 @@ private:
 	VkPipelineLayout m_LayoutCircle = nullptr;
 	std::array<Buffer, 2> m_VertexBufferCircle;
 
-	glm::vec2 m_QuadPosition = glm::vec2(0.4f, 0.6f);
+	glm::vec2 m_QuadPosition = glm::vec2(-0.3f, -0.7f);
 	float m_QuadAngle = 0.f;
 	glm::vec2 m_QuadScale = glm::vec2(1.f, 1.f); // also like a size for primitives
 
