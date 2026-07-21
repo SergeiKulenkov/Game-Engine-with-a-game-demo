@@ -39,6 +39,7 @@ struct VertexCircle
 	glm::vec2 position = glm::vec2(0.f, 0.f);
 	float thickness = 0.5f;
 	glm::vec4 colour = glm::vec4(0.f, 0.f, 0.f, 1.0f);
+	glm::vec2 vertexPosition = glm::vec2(0.f, 0.f);
 };
 
 ////////////////////
@@ -86,6 +87,10 @@ private:
 	static constexpr uint16_t vertexNumberForRectangle = 4;
 	static constexpr uint16_t maxCircles = 1000;
 	static constexpr uint16_t maxIndices = maxCircles * 6;
+	static constexpr std::array<glm::vec4, 4> quadVertexPositions = { glm::vec4(-0.5f, -0.5f, 0.0f, 1.f),
+																	  glm::vec4( 0.5f, -0.5f, 0.0f, 1.f),
+																	  glm::vec4( 0.5f,  0.5f, 0.0f, 1.f),
+																	  glm::vec4(-0.5f,  0.5f, 0.0f, 1.f) };
 
 	static inline const std::string shaderFolderPath = "../Assets/Shaders/";
 	static inline const std::string rectangleVertexShaderPath = shaderFolderPath + "rectangle.vert.spirv";

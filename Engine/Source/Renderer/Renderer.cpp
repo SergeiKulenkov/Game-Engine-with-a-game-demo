@@ -43,7 +43,7 @@ void Renderer::Init()
 
 	//  TODO: implement a pipeline builder for this
 	//InitPipeline(&m_Pipeline, &m_Layout, ObjectType::TEXTURED, 2, rectangleVertexShaderPath, rectangleFragmentShaderPath);
-	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, ObjectType::PRIMITIVE_CIRCLE, 3, circleVertexShaderPath, circleFragmentShaderPath);
+	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, ObjectType::PRIMITIVE_CIRCLE, 4, circleVertexShaderPath, circleFragmentShaderPath);
 
 	m_VerticesCircleBase = new VertexCircle[maxCircles];
 	m_Indices = new uint16_t[maxIndices];
@@ -120,6 +120,11 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 			attribute_descriptions[2].binding = bindingDescription.binding;
 			attribute_descriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 			attribute_descriptions[2].offset = static_cast<uint32_t>(offsetof(VertexCircle, colour));
+
+			attribute_descriptions[3].location = 3;
+			attribute_descriptions[3].binding = bindingDescription.binding;
+			attribute_descriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
+			attribute_descriptions[3].offset = static_cast<uint32_t>(offsetof(VertexCircle, vertexPosition));
 			break;
 		case ObjectType::PRIMITIVE_RECTANGLE:
 			break;
@@ -150,10 +155,10 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	viewport.scissorCount = 1;
 
 	VkPipelineDepthStencilStateCreateInfo depthStencil{ VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO };
-	depthStencil.depthTestEnable = VK_TRUE;
-	depthStencil.depthWriteEnable = VK_TRUE;
-	depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-	depthStencil.stencilTestEnable = VK_FALSE;
+	//depthStencil.depthTestEnable = VK_TRUE;
+	//depthStencil.depthWriteEnable = VK_TRUE;
+	//depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+	//depthStencil.stencilTestEnable = VK_FALSE;
 
 	VkPipelineMultisampleStateCreateInfo multisample{ VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
 	multisample.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -352,9 +357,7 @@ void Renderer::BeginScene(const Camera& camera)
 	m_CirclesVertexCount = 0;
 	m_VerticesCirclePtr = m_VerticesCircleBase;
 
-	// also setup scale and translation like in imgui?
-	const glm::mat4 viewProjection = camera.GetViewProjection();
-	vkCmdPushConstants(commandBuffer, m_LayoutCircle, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &viewProjection);
+	vkCmdPushConstants(commandBuffer, m_LayoutCircle, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &camera.GetViewProjection());
 
 	VkViewport vp{};
 	vp.width = viewportWidth;
@@ -381,10 +384,11 @@ void Renderer::EndScene()
 	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineCircle);
 
 	VkDeviceSize offset{ 0 };
+	// bind multiple vertex buffers??
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBufferCircle[frameIndex].handle, &offset);
 	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer[frameIndex].handle, offset, VK_INDEX_TYPE_UINT16);
 
-	vkCmdDrawIndexed(commandBuffer, m_CirclesIndexCount, 1, 0, 0, 0);
+	vkCmdDrawIndexed(commandBuffer, m_CirclesIndexCount, m_CirclesIndexCount / 6, 0, 0, 0);
 }
 
 void Renderer::Render(const Scene& scene)
@@ -396,9 +400,9 @@ void Renderer::Render(const Scene& scene)
 												glm::vec4(45.f / 255.f, 115.f / 255.f, 225.f / 255.f, 1.0f),
 												glm::vec4(0.f / 255.f, 255.f / 255.f, 0.f / 255.f, 1.0f) };
 
-	m_QuadPosition.x += 0.002f;
-	RenderCircle(m_QuadPosition, glm::vec2(1.f, 1.f), colours);
-	RenderCircle(glm::vec2(-0.3f, -0.5f), glm::vec2(1.f, 1.f), glm::vec4(0.75f, 0.75f, 0.0f, 1.0f));
+	//m_QuadPosition.x += 0.002f;
+	RenderCircle(glm::vec2(0.5f, 0.0f), glm::vec2(0.75f, 0.75f), colours);
+	RenderCircle(glm::vec2(0.0f, 0.0f), glm::vec2(1.f, 1.f), glm::vec4(0.75f, 0.75f, 0.0f, 1.0f));
 
 	// get entities from Scene? or get Sprites from Scene?
 	// what about drawing debug primitives? then get all entities to pass this* to them?
@@ -410,55 +414,25 @@ void Renderer::Render(const Scene& scene)
 
 void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const glm::vec4 colour)
 {
-	const float thickness = 0.05f;
-	// using the same coordinate system as in imgui - start at the top left corner
-	// TODO: use position and scale with a transform?
-	m_VerticesCirclePtr->position = quadPosition;
-	m_VerticesCirclePtr->thickness = thickness;
-	m_VerticesCirclePtr->colour = colour;
-	m_VerticesCirclePtr++;
-
-	m_VerticesCirclePtr->position = glm::vec2(quadPosition.x + quadScale.x, quadPosition.y);
-	m_VerticesCirclePtr->thickness = thickness;
-	m_VerticesCirclePtr->colour = colour;
-	m_VerticesCirclePtr++;
-
-	m_VerticesCirclePtr->position = quadPosition + quadScale;
-	m_VerticesCirclePtr->thickness = thickness;
-	m_VerticesCirclePtr->colour = colour;
-	m_VerticesCirclePtr++;
-
-	m_VerticesCirclePtr->position = glm::vec2(quadPosition.x, quadPosition.y + quadScale.y);
-	m_VerticesCirclePtr->thickness = thickness;
-	m_VerticesCirclePtr->colour = colour;
-	m_VerticesCirclePtr++;
-
-	m_CirclesVertexCount += 4;
-	m_CirclesIndexCount += 6;
+	const std::array<glm::vec4, 4>& colours = { colour, colour, colour, colour };
+	RenderCircle(quadPosition, quadScale, colours);
 }
 
 void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const std::array<glm::vec4, 4>& colours)
 {
+	// using the same coordinate system as in imgui - start at the top left corner
 	const float thickness = 0.05f;
-	m_VerticesCirclePtr->position = quadPosition;
-	m_VerticesCirclePtr->thickness = thickness;
-	m_VerticesCirclePtr->colour = colours[0];
-	m_VerticesCirclePtr++;
+	const glm::mat4 transform = glm::translate(glm::mat4(1.f), glm::vec3(quadPosition, 0.f))
+								* glm::scale(glm::mat4(1.f), glm::vec3(quadScale.x, quadScale.y, 1.f));
 
-	m_VerticesCirclePtr->position = glm::vec2(quadPosition.x + quadScale.x, quadPosition.y);
-	m_VerticesCirclePtr->thickness = thickness;
-	m_VerticesCirclePtr->colour = colours[1];
-	m_VerticesCirclePtr++;
-
-	m_VerticesCirclePtr->position = quadPosition + quadScale;
-	m_VerticesCirclePtr->thickness = thickness;
-	m_VerticesCirclePtr->colour = colours[2];
-	m_VerticesCirclePtr++;
-
-	m_VerticesCirclePtr->position = glm::vec2(quadPosition.x, quadPosition.y + quadScale.y);
-	m_VerticesCirclePtr->thickness = thickness;
-	m_VerticesCirclePtr->colour = colours[3];
-	m_VerticesCirclePtr++;
+	for (uint16_t i = 0; i < 4; i++)
+	{
+		m_VerticesCirclePtr->position = transform * quadVertexPositions[i];
+		m_VerticesCirclePtr->thickness = thickness;
+		m_VerticesCirclePtr->colour = colours[i];
+		m_VerticesCirclePtr->vertexPosition = quadVertexPositions[i] * 2.f;
+		m_VerticesCirclePtr++;
+	}
 
 	m_CirclesVertexCount += 4;
 	m_CirclesIndexCount += 6;
@@ -466,19 +440,9 @@ void Renderer::RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quad
 
 void Renderer::RenderRectangle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle)
 {
-	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
-	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
-
-	VkDeviceSize offset{ 0 };
-	vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBuffer.handle, &offset);
-	vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer[0].handle, offset, VK_INDEX_TYPE_UINT16);
-	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &m_DescriptorSet, 0, nullptr);
-
-	// TODO: apply Sprite's layer as Z position? or just sort them by position?
-	//m_PushConstants.transform = glm::translate(glm::mat4(1.0f), glm::vec3(quadPosition, 0.f))
+	//const glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(quadPosition, 0.f))
 	//							* glm::eulerAngleZ(quadAngle)
 	//							* glm::scale(glm::mat4(1.f), glm::vec3(quadScale.x, quadScale.y, 1.f));
 
-	//vkCmdPushConstants(commandBuffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &m_PushConstants);
-	vkCmdDrawIndexed(commandBuffer, 6, 1, 0, 0, 0);
+	// create four vertices like for a circle
 }
