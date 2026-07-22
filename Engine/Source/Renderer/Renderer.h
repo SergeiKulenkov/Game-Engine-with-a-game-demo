@@ -36,7 +36,7 @@ struct Vertex
 
 struct VertexCircle
 {
-	glm::vec2 position = glm::vec2(0.f, 0.f);
+	glm::vec2 worldPosition = glm::vec2(0.f, 0.f);
 	float thickness = 0.5f;
 	glm::vec4 colour = glm::vec4(0.f, 0.f, 0.f, 1.0f);
 	glm::vec2 vertexPosition = glm::vec2(0.f, 0.f);
@@ -58,12 +58,14 @@ class Renderer
 public:
 	void Render(const Scene& scene);
 
-	void RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const glm::vec4 colour);
-	void RenderCircle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const std::array<glm::vec4, 4>& colours);
+	// using the same coordinate system as in imgui - start at the top left corner
+	void AddCircle(const glm::vec2 & position, const glm::vec2 & scale, const glm::vec4 colour);
+	void AddCircle(const glm::vec2 & position, const glm::vec2 & scale, const std::array<glm::vec4, 4>& colours);
 
-	void RenderRectangle(const glm::vec2& quadPosition, const glm::vec2& quadScale, const float quadAngle);
+	// angle in radians
+	void AddRectangle(const glm::vec2 & position, const glm::vec2 & scale, const float angle);
 
-	//void DrawImageQuad();
+	void AddImageQuad(const glm::vec2 & position, const glm::vec2 & scale, const float angle, VkDescriptorSet textureId);
 
 private:
 	Renderer() {}
@@ -85,16 +87,17 @@ private:
 	////////////////////
 
 	static constexpr uint16_t vertexNumberForRectangle = 4;
-	static constexpr uint16_t maxCircles = 1000;
-	static constexpr uint16_t maxIndices = maxCircles * 6;
+	static constexpr uint16_t maxQuads = 1000;
+	static constexpr uint16_t maxIndices = maxQuads * 6;
+	static constexpr std::array<glm::vec2, 4> textureCoordinates = { glm::vec2(0.f, 0.f), glm::vec2(1.f, 0.f), glm::vec2(1.f, 1.f), glm::vec2(0.f, 1.f) };
 	static constexpr std::array<glm::vec4, 4> quadVertexPositions = { glm::vec4(-0.5f, -0.5f, 0.0f, 1.f),
 																	  glm::vec4( 0.5f, -0.5f, 0.0f, 1.f),
 																	  glm::vec4( 0.5f,  0.5f, 0.0f, 1.f),
 																	  glm::vec4(-0.5f,  0.5f, 0.0f, 1.f) };
 
 	static inline const std::string shaderFolderPath = "../Assets/Shaders/";
-	static inline const std::string rectangleVertexShaderPath = shaderFolderPath + "rectangle.vert.spirv";
-	static inline const std::string rectangleFragmentShaderPath = shaderFolderPath + "rectangle.frag.spirv";
+	static inline const std::string rectangleVertexShaderPath = shaderFolderPath + "texturedQuad.vert.spirv";
+	static inline const std::string rectangleFragmentShaderPath = shaderFolderPath + "texturedQuad.frag.spirv";
 	static inline const std::string circleVertexShaderPath = shaderFolderPath + "circle.vert.spirv";
 	static inline const std::string circleFragmentShaderPath = shaderFolderPath + "circle.frag.spirv";
 
@@ -107,24 +110,29 @@ private:
 	VkPipelineLayout m_Layout = nullptr;
 	VkDescriptorSetLayout m_DescriptorSetLayout = nullptr;
 	VkDescriptorSet m_DescriptorSet = nullptr;
-	Buffer m_VertexBuffer;
-	std::array<Buffer, 2> m_IndexBuffer;
+	std::array<Buffer, 2> m_QuadVertexBuffer;
+
+	Vertex* m_QuadVerticesPtr = nullptr;
+	Vertex* m_QuadVerticesBase = nullptr;
+	uint16_t m_QuadVertexCount = 0;
+	uint16_t m_QuadIndexCount = 0;
 
 	VkPipeline m_PipelineCircle = nullptr;
 	VkPipelineLayout m_LayoutCircle = nullptr;
 	std::array<Buffer, 2> m_VertexBufferCircle;
 
+	VertexCircle* m_VerticesCirclePtr = nullptr;
+	VertexCircle* m_VerticesCircleBase = nullptr;
+	uint16_t m_CirclesVertexCount = 0;
+	uint16_t m_CirclesIndexCount = 0;
+
+	uint16_t* m_Indices = nullptr;
+	std::array<Buffer, 2> m_IndexBuffer;
+
+	std::shared_ptr<Image> m_Image;
 	glm::vec2 m_QuadPosition = glm::vec2(-0.3f, -0.7f);
 	float m_QuadAngle = 0.f;
 	glm::vec2 m_QuadScale = glm::vec2(1.f, 1.f); // also like a size for primitives
-
-	std::shared_ptr<Image> m_Image;
-
-	VertexCircle* m_VerticesCirclePtr = nullptr;
-	VertexCircle* m_VerticesCircleBase = nullptr;
-	uint16_t* m_Indices = nullptr;
-	uint16_t m_CirclesVertexCount = 0;
-	uint16_t m_CirclesIndexCount = 0;
 
 	friend class Engine;
 };

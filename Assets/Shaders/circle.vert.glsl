@@ -1,6 +1,6 @@
 #version 460 core
 
-layout(location = 0) in vec2 inPosition;
+layout(location = 0) in vec2 inWorldPosition;
 layout(location = 1) in float inThickness;
 layout(location = 2) in vec4 inColor;
 layout(location = 3) in vec2 inVertexPosition;
@@ -16,7 +16,7 @@ layout(push_constant) uniform PushConstants
 
 void main()
 {
-    gl_Position = u_PushConstants.ViewProjection * vec4(inPosition, 0.0, 1.0);
+    gl_Position = u_PushConstants.ViewProjection * vec4(inWorldPosition, 0.0, 1.0);
     
     out_vertexPos = inVertexPosition;
     out_color = inColor;
