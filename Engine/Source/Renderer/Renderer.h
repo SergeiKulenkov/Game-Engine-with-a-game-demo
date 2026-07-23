@@ -49,6 +49,7 @@ enum class ObjectType
 	TEXTURED,
 	PRIMITIVE_CIRCLE,
 	PRIMITIVE_RECTANGLE,
+	LINE,
 };
 
 ////////////////////
@@ -72,7 +73,7 @@ private:
 
 	void Init();
 	void InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, const ObjectType type, const uint16_t count, const std::string& vertexShaderPath, const std::string& fragmentShaderPath);
-	void InitBuffers(Buffer& vertexBuffer, VertexCircle* vertices, VkDeviceSize vertexMemory, Buffer& indexBuffer, uint16_t* indices, VkDeviceSize indeexMemory);
+	void InitBuffers(Buffer& vertexBuffer, void* vertices, VkDeviceSize vertexMemory, Buffer& indexBuffer, uint16_t* indices, VkDeviceSize indeexMemory);
 	void InitDescriptors();
 
 	void Shutdown();
@@ -96,8 +97,8 @@ private:
 																	  glm::vec4(-0.5f,  0.5f, 0.0f, 1.f) };
 
 	static inline const std::string shaderFolderPath = "../Assets/Shaders/";
-	static inline const std::string rectangleVertexShaderPath = shaderFolderPath + "texturedQuad.vert.spirv";
-	static inline const std::string rectangleFragmentShaderPath = shaderFolderPath + "texturedQuad.frag.spirv";
+	static inline const std::string texturedVertexShaderPath = shaderFolderPath + "texturedQuad.vert.spirv";
+	static inline const std::string texturedFragmentShaderPath = shaderFolderPath + "texturedQuad.frag.spirv";
 	static inline const std::string circleVertexShaderPath = shaderFolderPath + "circle.vert.spirv";
 	static inline const std::string circleFragmentShaderPath = shaderFolderPath + "circle.frag.spirv";
 
@@ -119,10 +120,10 @@ private:
 
 	VkPipeline m_PipelineCircle = nullptr;
 	VkPipelineLayout m_LayoutCircle = nullptr;
-	std::array<Buffer, 2> m_VertexBufferCircle;
+	std::array<Buffer, 2> m_CircleVertexBuffer;
 
-	VertexCircle* m_VerticesCirclePtr = nullptr;
-	VertexCircle* m_VerticesCircleBase = nullptr;
+	VertexCircle* m_CircleVerticesPtr = nullptr;
+	VertexCircle* m_CircleVerticesBase = nullptr;
 	uint16_t m_CirclesVertexCount = 0;
 	uint16_t m_CirclesIndexCount = 0;
 

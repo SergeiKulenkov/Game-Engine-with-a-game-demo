@@ -42,10 +42,10 @@ void Renderer::Init()
 	InitDescriptors();
 
 	//  TODO: implement a pipeline builder for this
-	//InitPipeline(&m_Pipeline, &m_Layout, ObjectType::TEXTURED, 2, rectangleVertexShaderPath, rectangleFragmentShaderPath);
+	InitPipeline(&m_Pipeline, &m_Layout, ObjectType::TEXTURED, 2, texturedVertexShaderPath, texturedFragmentShaderPath);
 	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, ObjectType::PRIMITIVE_CIRCLE, 4, circleVertexShaderPath, circleFragmentShaderPath);
 
-	m_VerticesCircleBase = new VertexCircle[maxQuads];
+	m_CircleVerticesBase = new VertexCircle[maxQuads];
 	m_QuadVerticesBase = new Vertex[maxQuads];
 	m_Indices = new uint16_t[maxIndices];
 
@@ -77,8 +77,11 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	VkPipelineLayoutCreateInfo layoutInfo{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
 	layoutInfo.pPushConstantRanges = &pushConstantRange;
 	layoutInfo.pushConstantRangeCount = 1;
-	layoutInfo.setLayoutCount = 1;
-	layoutInfo.pSetLayouts = &m_DescriptorSetLayout;
+	if (type == ObjectType::TEXTURED)
+	{
+		layoutInfo.setLayoutCount = 1;
+		layoutInfo.pSetLayouts = &m_DescriptorSetLayout;
+	}
 	check_vk_result(vkCreatePipelineLayout(device, &layoutInfo, nullptr, layout));
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{ VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
@@ -200,7 +203,7 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	vkDestroyShaderModule(device, shader_stages[1].module, nullptr);
 }
 
-void Renderer::InitBuffers(Buffer& vertexBuffer, VertexCircle* vertices, VkDeviceSize vertexMemory, Buffer& indexBuffer, uint16_t* indices, VkDeviceSize indexMemory)
+void Renderer::InitBuffers(Buffer& vertexBuffer, void* vertices, VkDeviceSize vertexMemory, Buffer& indexBuffer, uint16_t* indices, VkDeviceSize indexMemory)
 {
 	VkDevice device = Engine::GetDevice();
 
@@ -277,7 +280,7 @@ void Renderer::Shutdown()
 		vkFreeMemory(device, buffer.memory, nullptr);
 	}
 
-	for (Buffer& buffer : m_VertexBufferCircle)
+	for (Buffer& buffer : m_CircleVertexBuffer)
 	{
 		vkDestroyBuffer(device, buffer.handle, nullptr);
 		vkFreeMemory(device, buffer.memory, nullptr);
@@ -359,7 +362,7 @@ void Renderer::BeginScene(const Camera& camera)
 
 	m_CirclesIndexCount = 0;
 	m_CirclesVertexCount = 0;
-	m_VerticesCirclePtr = m_VerticesCircleBase;
+	m_CircleVerticesPtr = m_CircleVerticesBase;
 
 	m_QuadIndexCount = 0;
 	m_QuadVertexCount = 0;
@@ -381,6 +384,7 @@ void Renderer::BeginScene(const Camera& camera)
 	//constants[0] = 2.0f / draw_data->DisplaySize.x; // Scale
 	//constants[1] = 2.0f / draw_data->DisplaySize.y;
 	vkCmdPushConstants(commandBuffer, m_LayoutCircle, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &camera.GetViewProjection());
+	vkCmdPushConstants(commandBuffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &camera.GetViewProjection());
 }
 
 void Renderer::EndScene()
@@ -390,13 +394,13 @@ void Renderer::EndScene()
 	{
 		VkDeviceSize verticesMemory = m_CirclesVertexCount * sizeof(VertexCircle);
 		VkDeviceSize indicesMemory = m_CirclesIndexCount * sizeof(uint16_t);
-		InitBuffers(m_VertexBufferCircle[frameIndex], m_VerticesCircleBase, verticesMemory, m_IndexBuffer[frameIndex], m_Indices, indicesMemory);
+		InitBuffers(m_CircleVertexBuffer[frameIndex], m_CircleVerticesBase, verticesMemory, m_IndexBuffer[frameIndex], m_Indices, indicesMemory);
 
 		VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineCircle);
 
 		VkDeviceSize offset{ 0 };
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_VertexBufferCircle[frameIndex].handle, &offset);
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_CircleVertexBuffer[frameIndex].handle, &offset);
 		vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer[frameIndex].handle, offset, VK_INDEX_TYPE_UINT16);
 
 		vkCmdDrawIndexed(commandBuffer, m_CirclesIndexCount, m_CirclesIndexCount / 6, 0, 0, 0);
@@ -405,15 +409,30 @@ void Renderer::EndScene()
 	{
 		VkDeviceSize verticesMemory = m_QuadVertexCount * sizeof(Vertex);
 		VkDeviceSize indicesMemory = m_QuadIndexCount * sizeof(uint16_t);
-		// don't init index buffer again??
-		InitBuffers(m_QuadVertexBuffer[frameIndex], m_VerticesCircleBase, verticesMemory, m_IndexBuffer[frameIndex], m_Indices, indicesMemory);
+
+		// TODO: refactor to init index buffer separately??
+		VkDevice device = Engine::GetDevice();
+		m_QuadVertexBuffer[frameIndex].usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		CreateOrResizeBuffer(m_QuadVertexBuffer[frameIndex], verticesMemory);
+
+		void* vbMemory;
+		check_vk_result(vkMapMemory(device, m_QuadVertexBuffer[frameIndex].memory, 0, verticesMemory, 0, &vbMemory));
+		memcpy(vbMemory, m_QuadVerticesBase, static_cast<size_t>(verticesMemory));
+
+		VkMappedMemoryRange range[1] = {};
+		range[0].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range[0].memory = m_QuadVertexBuffer[frameIndex].memory;
+		range[0].size = VK_WHOLE_SIZE;
+
+		check_vk_result(vkFlushMappedMemoryRanges(device, 1, range));
+		vkUnmapMemory(device, m_QuadVertexBuffer[frameIndex].memory);
+		//
 
 		VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
 		VkDeviceSize offset{ 0 };
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_QuadVertexBuffer[frameIndex].handle, &offset);
-		// reuse the same index buffer??
 		vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer[frameIndex].handle, offset, VK_INDEX_TYPE_UINT16);
 
 		vkCmdDrawIndexed(commandBuffer, m_QuadIndexCount, m_QuadIndexCount / 6, 0, 0, 0);
@@ -430,10 +449,10 @@ void Renderer::Render(const Scene& scene)
 												glm::vec4(0.f / 255.f, 255.f / 255.f, 0.f / 255.f, 1.0f) };
 
 	
-	AddCircle(glm::vec2(0.5f, 0.0f), glm::vec2(0.75f, 0.75f), colours);
-	AddCircle(glm::vec2(0.0f, 0.0f), glm::vec2(1.f, 1.f), glm::vec4(0.75f, 0.75f, 0.0f, 1.0f));
+	AddCircle(glm::vec2(0.75f, -0.5f), glm::vec2(0.75f, 0.75f), colours);
+	AddCircle(glm::vec2(0.75f, 0.5f), glm::vec2(1.f, 1.f), glm::vec4(0.75f, 0.75f, 0.0f, 1.0f));
 
-	//AddImageQuad(glm::vec2(0.0f, 0.0f), glm::vec2(1.f, 1.f), 0.f, m_DescriptorSet);
+	AddImageQuad(glm::vec2(-0.5f, 0.0f), glm::vec2(0.5f, 0.5f), glm::radians(25.f), m_DescriptorSet);
 
 	// get entities from Scene? or get Sprites from Scene?
 	// what about drawing debug primitives? then get all entities to pass this* to them?
@@ -453,15 +472,15 @@ void Renderer::AddCircle(const glm::vec2& position, const glm::vec2& scale, cons
 {
 	const float thickness = 0.05f;
 	const glm::mat4 transform = glm::translate(glm::mat4(1.f), glm::vec3(position, 0.f))
-		* glm::scale(glm::mat4(1.f), glm::vec3(scale.x, scale.y, 1.f));
+								* glm::scale(glm::mat4(1.f), glm::vec3(scale.x, scale.y, 1.f));
 
 	for (uint16_t i = 0; i < 4; i++)
 	{
-		m_VerticesCirclePtr->worldPosition = transform * quadVertexPositions[i];
-		m_VerticesCirclePtr->thickness = thickness;
-		m_VerticesCirclePtr->colour = colours[i];
-		m_VerticesCirclePtr->vertexPosition = quadVertexPositions[i] * 2.f;
-		m_VerticesCirclePtr++;
+		m_CircleVerticesPtr->worldPosition = transform * quadVertexPositions[i];
+		m_CircleVerticesPtr->thickness = thickness;
+		m_CircleVerticesPtr->colour = colours[i];
+		m_CircleVerticesPtr->vertexPosition = quadVertexPositions[i] * 2.f;
+		m_CircleVerticesPtr++;
 	}
 
 	m_CirclesVertexCount += 4;
@@ -477,13 +496,12 @@ void Renderer::AddRectangle(const glm::vec2& position, const glm::vec2& scale, c
 	for (uint16_t i = 0; i < 4; i++)
 	{
 		m_QuadVerticesPtr->position = transform * quadVertexPositions[i];
-		// set colour
+		// set colour? use white texture and multiply by the colour?
 		m_QuadVerticesPtr++;
 	}
 
 	m_QuadVertexCount += 4;
 	m_QuadIndexCount += 6;
-
 }
 
 void Renderer::AddImageQuad(const glm::vec2& position, const glm::vec2& scale, const float angle, VkDescriptorSet textureId)
@@ -503,5 +521,6 @@ void Renderer::AddImageQuad(const glm::vec2& position, const glm::vec2& scale, c
 	m_QuadIndexCount += 6;
 	
 	// probably need to add the texture to some array?
-	//vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &textureId, 0, nullptr);
+	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &textureId, 0, nullptr);
 }
