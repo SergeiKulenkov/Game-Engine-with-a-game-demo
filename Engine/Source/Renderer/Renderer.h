@@ -44,6 +44,14 @@ struct VertexCircle
 
 ////////////////////
 
+struct VertexLine
+{
+	glm::vec2 position = glm::vec2(0.f, 0.f);
+	glm::vec4 colour = glm::vec4(0.f, 0.f, 0.f, 1.0f);
+};
+
+////////////////////
+
 enum class ObjectType
 {
 	TEXTURED,
@@ -64,9 +72,13 @@ public:
 	void AddCircle(const glm::vec2 & position, const glm::vec2 & scale, const std::array<glm::vec4, 4>& colours);
 
 	// angle in radians
-	void AddRectangle(const glm::vec2 & position, const glm::vec2 & scale, const float angle);
+	void AddFilledRectangle(const glm::vec2 & position, const glm::vec2 & scale, const float angle);
 
 	void AddImageQuad(const glm::vec2 & position, const glm::vec2 & scale, const float angle, VkDescriptorSet textureId);
+
+	void AddLine(const glm::vec2& positionA, const glm::vec2& positionB, const glm::vec4 colour);
+	// positionA is the top left corner, positionB is bottom right
+	void AddRectangle(const glm::vec2& positionA, const glm::vec2& positionB, const glm::vec4 colour);
 
 private:
 	Renderer() {}
@@ -87,9 +99,9 @@ private:
 
 	////////////////////
 
-	static constexpr uint16_t vertexNumberForRectangle = 4;
-	static constexpr uint16_t maxQuads = 1000;
-	static constexpr uint16_t maxIndices = maxQuads * 6;
+	static constexpr uint16_t vertexNumberForQuad = 4;
+	static constexpr uint16_t maxVertices = 1000;
+	static constexpr uint16_t maxIndices = maxVertices * 6;
 	static constexpr std::array<glm::vec2, 4> textureCoordinates = { glm::vec2(0.f, 0.f), glm::vec2(1.f, 0.f), glm::vec2(1.f, 1.f), glm::vec2(0.f, 1.f) };
 	static constexpr std::array<glm::vec4, 4> quadVertexPositions = { glm::vec4(-0.5f, -0.5f, 0.0f, 1.f),
 																	  glm::vec4( 0.5f, -0.5f, 0.0f, 1.f),
@@ -101,6 +113,8 @@ private:
 	static inline const std::string texturedFragmentShaderPath = shaderFolderPath + "texturedQuad.frag.spirv";
 	static inline const std::string circleVertexShaderPath = shaderFolderPath + "circle.vert.spirv";
 	static inline const std::string circleFragmentShaderPath = shaderFolderPath + "circle.frag.spirv";
+	static inline const std::string lineVertexShaderPath = shaderFolderPath + "line.vert.spirv";
+	static inline const std::string lineFragmentShaderPath = shaderFolderPath + "line.frag.spirv";
 
 	static constexpr std::string_view texturePath = "../Assets/testTexture.png";
 
@@ -126,6 +140,14 @@ private:
 	VertexCircle* m_CircleVerticesBase = nullptr;
 	uint16_t m_CirclesVertexCount = 0;
 	uint16_t m_CirclesIndexCount = 0;
+
+	VkPipeline m_PipelineLine = nullptr;
+	VkPipelineLayout m_LayoutLine = nullptr;
+	std::array<Buffer, 2> m_LineVertexBuffer;
+
+	VertexLine* m_LineVerticesPtr = nullptr;
+	VertexLine* m_LineVerticesBase = nullptr;
+	uint16_t m_LineVertexCount = 0;
 
 	uint16_t* m_Indices = nullptr;
 	std::array<Buffer, 2> m_IndexBuffer;

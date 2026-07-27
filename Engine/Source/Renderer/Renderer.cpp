@@ -44,9 +44,11 @@ void Renderer::Init()
 	//  TODO: implement a pipeline builder for this
 	InitPipeline(&m_Pipeline, &m_Layout, ObjectType::TEXTURED, 2, texturedVertexShaderPath, texturedFragmentShaderPath);
 	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, ObjectType::PRIMITIVE_CIRCLE, 4, circleVertexShaderPath, circleFragmentShaderPath);
+	InitPipeline(&m_PipelineLine, &m_LayoutLine, ObjectType::LINE, 2, lineVertexShaderPath, lineFragmentShaderPath);
 
-	m_CircleVerticesBase = new VertexCircle[maxQuads];
-	m_QuadVerticesBase = new Vertex[maxQuads];
+	m_CircleVerticesBase = new VertexCircle[maxVertices];
+	m_QuadVerticesBase = new Vertex[maxVertices];
+	m_LineVerticesBase = new VertexLine[maxVertices];
 	m_Indices = new uint16_t[maxIndices];
 
 	uint16_t offset = 0;
@@ -85,7 +87,11 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 	check_vk_result(vkCreatePipelineLayout(device, &layoutInfo, nullptr, layout));
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{ VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-	inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	if (type != ObjectType::LINE)
+	{
+		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	}
+	else inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
 
 	VkVertexInputBindingDescription bindingDescription;
 	bindingDescription.binding = 0;
@@ -129,6 +135,19 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 			attribute_descriptions[3].binding = bindingDescription.binding;
 			attribute_descriptions[3].format = VK_FORMAT_R32G32_SFLOAT;
 			attribute_descriptions[3].offset = static_cast<uint32_t>(offsetof(VertexCircle, vertexPosition));
+			break;
+		case ObjectType::LINE:
+			bindingDescription.stride = sizeof(VertexLine);
+
+			attribute_descriptions[0].location = 0;
+			attribute_descriptions[0].binding = bindingDescription.binding;
+			attribute_descriptions[0].format = VK_FORMAT_R32G32_SFLOAT;
+			attribute_descriptions[0].offset = 0;
+
+			attribute_descriptions[1].location = 1;
+			attribute_descriptions[1].binding = bindingDescription.binding;
+			attribute_descriptions[1].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+			attribute_descriptions[1].offset = static_cast<uint32_t>(offsetof(VertexLine, colour));
 			break;
 		case ObjectType::PRIMITIVE_RECTANGLE:
 			break;
@@ -274,6 +293,9 @@ void Renderer::Shutdown()
 	vkDestroyPipeline(device, m_PipelineCircle, nullptr);
 	vkDestroyPipelineLayout(device, m_LayoutCircle, nullptr);
 
+	vkDestroyPipeline(device, m_PipelineLine, nullptr);
+	vkDestroyPipelineLayout(device, m_LayoutLine, nullptr);
+
 	for (Buffer& buffer : m_QuadVertexBuffer)
 	{
 		vkDestroyBuffer(device, buffer.handle, nullptr);
@@ -287,6 +309,12 @@ void Renderer::Shutdown()
 	}
 
 	for (Buffer& buffer : m_IndexBuffer)
+	{
+		vkDestroyBuffer(device, buffer.handle, nullptr);
+		vkFreeMemory(device, buffer.memory, nullptr);
+	}
+
+	for (Buffer& buffer : m_LineVertexBuffer)
 	{
 		vkDestroyBuffer(device, buffer.handle, nullptr);
 		vkFreeMemory(device, buffer.memory, nullptr);
@@ -368,6 +396,9 @@ void Renderer::BeginScene(const Camera& camera)
 	m_QuadVertexCount = 0;
 	m_QuadVerticesPtr = m_QuadVerticesBase;
 
+	m_LineVertexCount = 0;
+	m_LineVerticesPtr = m_LineVerticesBase;
+
 	VkViewport vp{};
 	vp.width = viewportWidth;
 	vp.height = viewportHeight;
@@ -385,6 +416,7 @@ void Renderer::BeginScene(const Camera& camera)
 	//constants[1] = 2.0f / draw_data->DisplaySize.y;
 	vkCmdPushConstants(commandBuffer, m_LayoutCircle, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &camera.GetViewProjection());
 	vkCmdPushConstants(commandBuffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &camera.GetViewProjection());
+	vkCmdPushConstants(commandBuffer, m_LayoutLine, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &camera.GetViewProjection());
 }
 
 void Renderer::EndScene()
@@ -437,6 +469,34 @@ void Renderer::EndScene()
 
 		vkCmdDrawIndexed(commandBuffer, m_QuadIndexCount, m_QuadIndexCount / 6, 0, 0, 0);
 	}
+	if (m_LineVertexCount != 0)
+	{
+		VkDevice device = Engine::GetDevice();
+		VkDeviceSize verticesMemory = m_LineVertexCount * sizeof(VertexLine);
+		m_LineVertexBuffer[frameIndex].usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		CreateOrResizeBuffer(m_LineVertexBuffer[frameIndex], verticesMemory);
+
+		void* vbMemory;
+		check_vk_result(vkMapMemory(device, m_LineVertexBuffer[frameIndex].memory, 0, verticesMemory, 0, &vbMemory));
+		memcpy(vbMemory, m_LineVerticesBase, static_cast<size_t>(verticesMemory));
+
+		VkMappedMemoryRange range[1] = {};
+		range[0].sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+		range[0].memory = m_LineVertexBuffer[frameIndex].memory;
+		range[0].size = VK_WHOLE_SIZE;
+
+		check_vk_result(vkFlushMappedMemoryRanges(device, 1, range));
+		vkUnmapMemory(device, m_LineVertexBuffer[frameIndex].memory);
+		//
+
+		VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLine);
+
+		VkDeviceSize offset{ 0 };
+		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_LineVertexBuffer[frameIndex].handle, &offset);
+
+		vkCmdDraw(commandBuffer, m_LineVertexCount, m_LineVertexCount / 2, 0, 0);
+	}
 }
 
 void Renderer::Render(const Scene& scene)
@@ -453,6 +513,9 @@ void Renderer::Render(const Scene& scene)
 	AddCircle(glm::vec2(0.75f, 0.5f), glm::vec2(1.f, 1.f), glm::vec4(0.75f, 0.75f, 0.0f, 1.0f));
 
 	AddImageQuad(glm::vec2(-0.5f, 0.0f), glm::vec2(0.5f, 0.5f), glm::radians(25.f), m_DescriptorSet);
+
+	AddLine(glm::vec2(-0.2f, 0.3f), glm::vec2(0.3f, 0.f), glm::vec4(1.f, 0.f, 0.0f, 1.0f));
+	AddLine(glm::vec2(-0.2f, 0.3f), glm::vec2(0.8f, 0.6f), glm::vec4(1.f, 0.f, 0.0f, 1.0f));
 
 	// get entities from Scene? or get Sprites from Scene?
 	// what about drawing debug primitives? then get all entities to pass this* to them?
@@ -474,7 +537,7 @@ void Renderer::AddCircle(const glm::vec2& position, const glm::vec2& scale, cons
 	const glm::mat4 transform = glm::translate(glm::mat4(1.f), glm::vec3(position, 0.f))
 								* glm::scale(glm::mat4(1.f), glm::vec3(scale.x, scale.y, 1.f));
 
-	for (uint16_t i = 0; i < 4; i++)
+	for (uint16_t i = 0; i < vertexNumberForQuad; i++)
 	{
 		m_CircleVerticesPtr->worldPosition = transform * quadVertexPositions[i];
 		m_CircleVerticesPtr->thickness = thickness;
@@ -487,13 +550,13 @@ void Renderer::AddCircle(const glm::vec2& position, const glm::vec2& scale, cons
 	m_CirclesIndexCount += 6;
 }
 
-void Renderer::AddRectangle(const glm::vec2& position, const glm::vec2& scale, const float angle)
+void Renderer::AddFilledRectangle(const glm::vec2& position, const glm::vec2& scale, const float angle)
 {
 	const glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position, 0.f))
 								* glm::eulerAngleZ(angle)
 								* glm::scale(glm::mat4(1.f), glm::vec3(scale.x, scale.y, 1.f));
 
-	for (uint16_t i = 0; i < 4; i++)
+	for (uint16_t i = 0; i < vertexNumberForQuad; i++)
 	{
 		m_QuadVerticesPtr->position = transform * quadVertexPositions[i];
 		// set colour? use white texture and multiply by the colour?
@@ -510,7 +573,7 @@ void Renderer::AddImageQuad(const glm::vec2& position, const glm::vec2& scale, c
 								* glm::eulerAngleZ(angle)
 								* glm::scale(glm::mat4(1.f), glm::vec3(scale.x, scale.y, 1.f));
 
-	for (uint16_t i = 0; i < 4; i++)
+	for (uint16_t i = 0; i < vertexNumberForQuad; i++)
 	{
 		m_QuadVerticesPtr->position = transform * quadVertexPositions[i];
 		m_QuadVerticesPtr->textureCoord = textureCoordinates[i];
@@ -523,4 +586,22 @@ void Renderer::AddImageQuad(const glm::vec2& position, const glm::vec2& scale, c
 	// probably need to add the texture to some array?
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &textureId, 0, nullptr);
+}
+
+void Renderer::AddRectangle(const glm::vec2& positionA, const glm::vec2& positionB, const glm::vec4 colour)
+{
+
+	m_LineVertexCount += 4;
+}
+
+void Renderer::AddLine(const glm::vec2& positionA, const glm::vec2& positionB, const glm::vec4 colour)
+{
+	m_LineVerticesPtr->position = positionA;
+	m_LineVerticesPtr->colour = colour;
+	m_LineVerticesPtr++;
+	m_LineVerticesPtr->position = positionB;
+	m_LineVerticesPtr->colour = colour;
+	m_LineVerticesPtr++;
+
+	m_LineVertexCount += 2;
 }
