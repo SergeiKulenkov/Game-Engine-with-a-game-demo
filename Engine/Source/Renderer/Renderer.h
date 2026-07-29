@@ -30,6 +30,8 @@ struct Vertex
 {
 	glm::vec2 position = glm::vec2(0.f, 0.f);
 	glm::vec2 textureCoord = glm::vec2(0.f, 0.f);
+	glm::vec4 colour = glm::vec4(1.f);
+	// texture index?
 };
 
 ////////////////////
@@ -68,13 +70,13 @@ public:
 	void Render(const Scene& scene);
 
 	// using the same coordinate system as in imgui - start at the top left corner
-	void AddCircle(const glm::vec2 & position, const glm::vec2 & scale, const glm::vec4 colour);
-	void AddCircle(const glm::vec2 & position, const glm::vec2 & scale, const std::array<glm::vec4, 4>& colours);
+	void AddCircle(const glm::vec2& position, const glm::vec2 & scale, const glm::vec4 colour, const float thickness = 0.005f);
+	void AddCircle(const glm::vec2& position, const glm::vec2 & scale, const std::array<glm::vec4, 4>& colours, const float thickness = 0.005f);
 
 	// angle in radians
-	void AddFilledRectangle(const glm::vec2 & position, const glm::vec2 & scale, const float angle);
+	void AddFilledRectangle(const glm::vec2& position, const glm::vec2& scale, const glm::vec4 colour, const float angle = 0.f);
 
-	void AddImageQuad(const glm::vec2 & position, const glm::vec2 & scale, const float angle, VkDescriptorSet textureId);
+	void AddImageQuad(const glm::vec2& position, const glm::vec2& scale, const float angle, VkDescriptorSet textureId, const glm::vec4 tintColour = glm::vec4(1.f));
 
 	void AddLine(const glm::vec2& positionA, const glm::vec2& positionB, const glm::vec4 colour);
 	// positionA is the top left corner, positionB is bottom right
@@ -153,6 +155,8 @@ private:
 	std::array<Buffer, 2> m_IndexBuffer;
 
 	std::shared_ptr<Image> m_Image;
+	std::shared_ptr<Image> m_WhiteTexture;
+
 	glm::vec2 m_QuadPosition = glm::vec2(-0.3f, -0.7f);
 	float m_QuadAngle = 0.f;
 	glm::vec2 m_QuadScale = glm::vec2(1.f, 1.f); // also like a size for primitives

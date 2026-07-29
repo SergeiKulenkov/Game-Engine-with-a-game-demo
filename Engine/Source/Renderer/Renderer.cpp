@@ -37,12 +37,15 @@ static uint32_t GetMemoryType(VkMemoryPropertyFlags properties, uint32_t type_bi
 void Renderer::Init()
 {
 	m_Image = std::make_shared<Image>(texturePath);
+	m_WhiteTexture = std::make_shared<Image>(1, 1, ImageFormat::RGBA);
+	const uint32_t white = 0xffffffff;
+	m_WhiteTexture->SetData(&white);
 
 	// TODO: how to init descriptors for every image? and change image creation to remove imgui function call?
 	InitDescriptors();
 
 	//  TODO: implement a pipeline builder for this
-	InitPipeline(&m_Pipeline, &m_Layout, ObjectType::TEXTURED, 2, texturedVertexShaderPath, texturedFragmentShaderPath);
+	InitPipeline(&m_Pipeline, &m_Layout, ObjectType::TEXTURED, 3, texturedVertexShaderPath, texturedFragmentShaderPath);
 	InitPipeline(&m_PipelineCircle, &m_LayoutCircle, ObjectType::PRIMITIVE_CIRCLE, 4, circleVertexShaderPath, circleFragmentShaderPath);
 	InitPipeline(&m_PipelineLine, &m_LayoutLine, ObjectType::LINE, 2, lineVertexShaderPath, lineFragmentShaderPath);
 
@@ -112,6 +115,11 @@ void Renderer::InitPipeline(VkPipeline* pipeline, VkPipelineLayout* layout, cons
 			attribute_descriptions[1].binding = bindingDescription.binding;
 			attribute_descriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
 			attribute_descriptions[1].offset = static_cast<uint32_t>(offsetof(Vertex, textureCoord));
+
+			attribute_descriptions[2].location = 2;
+			attribute_descriptions[2].binding = bindingDescription.binding;
+			attribute_descriptions[2].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+			attribute_descriptions[2].offset = static_cast<uint32_t>(offsetof(Vertex, colour));
 			break;
 		case ObjectType::PRIMITIVE_CIRCLE:
 			bindingDescription.stride = sizeof(VertexCircle);
@@ -259,7 +267,7 @@ void Renderer::InitDescriptors()
 
 	VkDescriptorSetLayoutBinding binding = {};
 	binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	binding.descriptorCount = 1;
+	binding.descriptorCount = 1; // number of textures??
 	binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	VkDescriptorSetLayoutCreateInfo info = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
@@ -271,7 +279,7 @@ void Renderer::InitDescriptors()
 	m_DescriptorSet = Engine::AllocateSecriptorSet(m_DescriptorSetLayout);
 	
 	VkWriteDescriptorSet writeDS = { VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
-	writeDS.descriptorCount = 1;
+	writeDS.descriptorCount = binding.descriptorCount;
 	writeDS.dstSet = m_DescriptorSet;
 	writeDS.descriptorType = binding.descriptorType;
 	writeDS.dstBinding = 0;
@@ -283,6 +291,7 @@ void Renderer::InitDescriptors()
 void Renderer::Shutdown()
 {
 	m_Image.reset();
+	m_WhiteTexture.reset();
 
 	VkDevice device = Engine::GetDevice();
 	vkDestroyPipeline(device, m_Pipeline, nullptr);
@@ -509,13 +518,17 @@ void Renderer::Render(const Scene& scene)
 												glm::vec4(0.f / 255.f, 255.f / 255.f, 0.f / 255.f, 1.0f) };
 
 	
-	AddCircle(glm::vec2(0.75f, -0.5f), glm::vec2(0.75f, 0.75f), colours);
+	AddCircle(glm::vec2(0.75f, 0.5f), glm::vec2(0.75f, 0.75f), colours);
 	AddCircle(glm::vec2(0.75f, 0.5f), glm::vec2(1.f, 1.f), glm::vec4(0.75f, 0.75f, 0.0f, 1.0f));
 
-	AddImageQuad(glm::vec2(-0.5f, 0.0f), glm::vec2(0.5f, 0.5f), glm::radians(25.f), m_DescriptorSet);
+	AddImageQuad(glm::vec2(-0.7f, 0.5f), glm::vec2(0.5f, 0.5f), glm::radians(25.f), m_DescriptorSet);
 
 	AddLine(glm::vec2(-0.2f, 0.3f), glm::vec2(0.3f, 0.f), glm::vec4(1.f, 0.f, 0.0f, 1.0f));
 	AddLine(glm::vec2(-0.2f, 0.3f), glm::vec2(0.8f, 0.6f), glm::vec4(1.f, 0.f, 0.0f, 1.0f));
+
+	AddFilledRectangle(glm::vec2(-0.5f, -0.5f), glm::vec2(0.5f, 0.5f), glm::vec4(0.7f, 0.7f, 0.7f, 1.0f), glm::radians(-25.f));
+
+	AddRectangle(glm::vec2(0.0f, 0.5f), glm::vec2(0.5f, 0.8f), glm::vec4(0.f, 1.f, 0.0f, 1.0f));
 
 	// get entities from Scene? or get Sprites from Scene?
 	// what about drawing debug primitives? then get all entities to pass this* to them?
@@ -525,18 +538,18 @@ void Renderer::Render(const Scene& scene)
 	EndScene();
 }
 
-void Renderer::AddCircle(const glm::vec2& position, const glm::vec2& scale, const glm::vec4 colour)
+void Renderer::AddCircle(const glm::vec2& position, const glm::vec2& scale, const glm::vec4 colour, const float thickness)
 {
 	const std::array<glm::vec4, 4>& colours = { colour, colour, colour, colour };
-	AddCircle(position, scale, colours);
+	AddCircle(position, scale, colours, thickness);
 }
 
-void Renderer::AddCircle(const glm::vec2& position, const glm::vec2& scale, const std::array<glm::vec4, 4>& colours)
+void Renderer::AddCircle(const glm::vec2& position, const glm::vec2& scale, const std::array<glm::vec4, 4>& colours, const float thickness)
 {
-	const float thickness = 0.05f;
 	const glm::mat4 transform = glm::translate(glm::mat4(1.f), glm::vec3(position, 0.f))
 								* glm::scale(glm::mat4(1.f), glm::vec3(scale.x, scale.y, 1.f));
 
+	// maybe need to multiply thickness by some scaling value??
 	for (uint16_t i = 0; i < vertexNumberForQuad; i++)
 	{
 		m_CircleVerticesPtr->worldPosition = transform * quadVertexPositions[i];
@@ -550,24 +563,7 @@ void Renderer::AddCircle(const glm::vec2& position, const glm::vec2& scale, cons
 	m_CirclesIndexCount += 6;
 }
 
-void Renderer::AddFilledRectangle(const glm::vec2& position, const glm::vec2& scale, const float angle)
-{
-	const glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position, 0.f))
-								* glm::eulerAngleZ(angle)
-								* glm::scale(glm::mat4(1.f), glm::vec3(scale.x, scale.y, 1.f));
-
-	for (uint16_t i = 0; i < vertexNumberForQuad; i++)
-	{
-		m_QuadVerticesPtr->position = transform * quadVertexPositions[i];
-		// set colour? use white texture and multiply by the colour?
-		m_QuadVerticesPtr++;
-	}
-
-	m_QuadVertexCount += 4;
-	m_QuadIndexCount += 6;
-}
-
-void Renderer::AddImageQuad(const glm::vec2& position, const glm::vec2& scale, const float angle, VkDescriptorSet textureId)
+void Renderer::AddFilledRectangle(const glm::vec2& position, const glm::vec2& scale, const glm::vec4 colour, const float angle)
 {
 	const glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position, 0.f))
 								* glm::eulerAngleZ(angle)
@@ -577,6 +573,29 @@ void Renderer::AddImageQuad(const glm::vec2& position, const glm::vec2& scale, c
 	{
 		m_QuadVerticesPtr->position = transform * quadVertexPositions[i];
 		m_QuadVerticesPtr->textureCoord = textureCoordinates[i];
+		m_QuadVerticesPtr->colour = colour;
+		m_QuadVerticesPtr++;
+	}
+
+	m_QuadVertexCount += 4;
+	m_QuadIndexCount += 6;
+
+	//VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
+	//const VkDescriptorSet texture = m_WhiteTexture->GetDescriptorSet();
+	//vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &texture, 0, nullptr);
+}
+
+void Renderer::AddImageQuad(const glm::vec2& position, const glm::vec2& scale, const float angle, VkDescriptorSet textureId, const glm::vec4 tintColour)
+{
+	const glm::mat4 transform = glm::translate(glm::mat4(1.0f), glm::vec3(position, 0.f))
+								* glm::eulerAngleZ(angle)
+								* glm::scale(glm::mat4(1.f), glm::vec3(scale.x, scale.y, 1.f));
+
+	for (uint16_t i = 0; i < vertexNumberForQuad; i++)
+	{
+		m_QuadVerticesPtr->position = transform * quadVertexPositions[i];
+		m_QuadVerticesPtr->textureCoord = textureCoordinates[i];
+		m_QuadVerticesPtr->colour = tintColour;
 		m_QuadVerticesPtr++;
 	}
 
@@ -584,14 +603,17 @@ void Renderer::AddImageQuad(const glm::vec2& position, const glm::vec2& scale, c
 	m_QuadIndexCount += 6;
 	
 	// probably need to add the texture to some array?
+	// and then bind befor the draw call?
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &textureId, 0, nullptr);
 }
 
 void Renderer::AddRectangle(const glm::vec2& positionA, const glm::vec2& positionB, const glm::vec4 colour)
 {
-
-	m_LineVertexCount += 4;
+	AddLine(positionA, glm::vec2(positionB.x, positionA.y), colour);
+	AddLine(glm::vec2(positionB.x, positionA.y), positionB, colour);
+	AddLine(positionB, glm::vec2(positionA.x , positionB.y), colour);
+	AddLine(glm::vec2(positionA.x, positionB.y), positionA, colour);
 }
 
 void Renderer::AddLine(const glm::vec2& positionA, const glm::vec2& positionB, const glm::vec4 colour)
