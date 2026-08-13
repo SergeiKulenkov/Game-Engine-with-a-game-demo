@@ -73,4 +73,6 @@ private:
 	float m_MaxSpeed = defaultSpeedLimit;
 	bool m_AllowInput = true;
 	DrawDebugChoice m_DebugChoice = DrawDebugChoice::Circle;
+
+	bool m_ZoomKeyPressed = false;
 };

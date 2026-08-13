@@ -13,6 +13,8 @@ public:
 
 	static bool IsKeyDown(const KeyCode keycode);
 
+	static bool IsKeyPressed(const KeyCode keycode);
+
 	static bool IsKeyUp(const KeyCode keycode);
 
 	static bool IsMouseButtonDown(const MouseButton button);

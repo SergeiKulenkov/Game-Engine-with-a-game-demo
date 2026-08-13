@@ -66,9 +66,31 @@ void Player::Update(float deltaTime)
 	// camera test
 	if (input != glm::vec2(0.f, 0.f))
 	{
-		const float cameraSpeed = 5.f;
+		const float cameraSpeed = 4.f;
 		Camera& camera = m_Scene->GetCamera();
 		camera.GetPosition() += glm::vec3(input.x * cameraSpeed * deltaTime, -input.y * cameraSpeed * deltaTime, 0.f);
+	}
+	else
+	{
+		if (!m_ZoomKeyPressed)
+		{
+			float zoomAmount = 0.f;
+			if (InputManager::IsKeyPressed(KeyCode::Q))
+				zoomAmount += 0.25f;
+			else if (InputManager::IsKeyPressed(KeyCode::E))
+				zoomAmount -= 0.25f;
+
+			if (zoomAmount != 0.f)
+			{
+				m_Scene->ZoomCamera(zoomAmount);
+				m_ZoomKeyPressed = true;
+			}
+		}
+		else
+		{
+			if (InputManager::IsKeyUp(KeyCode::Q) && InputManager::IsKeyUp(KeyCode::E))
+				m_ZoomKeyPressed = false;
+		}
 	}
 }
 

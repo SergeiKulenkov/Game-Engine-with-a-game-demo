@@ -451,7 +451,7 @@ void Renderer::EndScene()
 		VkDeviceSize verticesMemory = m_QuadVertexCount * sizeof(Vertex);
 		VkDeviceSize indicesMemory = m_QuadIndexCount * sizeof(uint16_t);
 
-		// TODO: refactor to init index buffer separately??
+		// TODO: refactor to init index buffer separately
 		VkDevice device = Engine::GetDevice();
 		m_QuadVertexBuffer[frameIndex].usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 		CreateOrResizeBuffer(m_QuadVertexBuffer[frameIndex], verticesMemory);
@@ -467,8 +467,8 @@ void Renderer::EndScene()
 
 		check_vk_result(vkFlushMappedMemoryRanges(device, 1, range));
 		vkUnmapMemory(device, m_QuadVertexBuffer[frameIndex].memory);
-		//
 
+		// bind and issue the draw command
 		VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
 
@@ -476,10 +476,14 @@ void Renderer::EndScene()
 		vkCmdBindVertexBuffers(commandBuffer, 0, 1, &m_QuadVertexBuffer[frameIndex].handle, &offset);
 		vkCmdBindIndexBuffer(commandBuffer, m_IndexBuffer[frameIndex].handle, offset, VK_INDEX_TYPE_UINT16);
 
+		// bind all textures, access them by index in the shader
+		//vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &textures, 0, nullptr);
+
 		vkCmdDrawIndexed(commandBuffer, m_QuadIndexCount, m_QuadIndexCount / 6, 0, 0, 0);
 	}
 	if (m_LineVertexCount != 0)
 	{
+		// TODO: refactor to init index buffer separately
 		VkDevice device = Engine::GetDevice();
 		VkDeviceSize verticesMemory = m_LineVertexCount * sizeof(VertexLine);
 		m_LineVertexBuffer[frameIndex].usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -496,8 +500,8 @@ void Renderer::EndScene()
 
 		check_vk_result(vkFlushMappedMemoryRanges(device, 1, range));
 		vkUnmapMemory(device, m_LineVertexBuffer[frameIndex].memory);
-		//
 
+		// bind and issue the draw command
 		VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_PipelineLine);
 
@@ -518,17 +522,17 @@ void Renderer::Render(const Scene& scene)
 												glm::vec4(0.f / 255.f, 255.f / 255.f, 0.f / 255.f, 1.0f) };
 
 	
-	AddCircle(glm::vec2(0.75f, 0.5f), glm::vec2(0.75f, 0.75f), colours);
-	AddCircle(glm::vec2(0.75f, 0.5f), glm::vec2(1.f, 1.f), glm::vec4(0.75f, 0.75f, 0.0f, 1.0f));
+	AddCircle(glm::vec2(0.75f, 0.3f), glm::vec2(0.75f, 0.75f), colours, 0.05f);
+	AddCircle(glm::vec2(0.75f, 0.3f), glm::vec2(1.f, 1.f), glm::vec4(0.75f, 0.75f, 0.0f, 1.0f));
 
-	AddImageQuad(glm::vec2(-0.7f, 0.5f), glm::vec2(0.5f, 0.5f), glm::radians(25.f), m_DescriptorSet);
+	AddImageQuad(glm::vec2(-0.7f, 0.0f), glm::vec2(0.5f, 0.5f), glm::radians(25.f), m_DescriptorSet);
 
-	AddLine(glm::vec2(-0.2f, 0.3f), glm::vec2(0.3f, 0.f), glm::vec4(1.f, 0.f, 0.0f, 1.0f));
-	AddLine(glm::vec2(-0.2f, 0.3f), glm::vec2(0.8f, 0.6f), glm::vec4(1.f, 0.f, 0.0f, 1.0f));
+	AddLine(glm::vec2(-0.2f, 0.5f), glm::vec2(0.75f, 0.3f), glm::vec4(1.f, 0.f, 0.0f, 1.0f));
+	AddLine(glm::vec2(0.75f, 0.3f), glm::vec2(0.75f, 0.9f), glm::vec4(1.f, 0.f, 0.0f, 1.0f));
 
-	AddFilledRectangle(glm::vec2(-0.5f, -0.5f), glm::vec2(0.5f, 0.5f), glm::vec4(0.7f, 0.7f, 0.7f, 1.0f), glm::radians(-25.f));
+	//AddFilledRectangle(glm::vec2(-0.5f, -0.5f), glm::vec2(0.5f, 0.5f), glm::vec4(0.7f, 0.7f, 0.7f, 1.0f), glm::radians(-25.f));
 
-	AddRectangle(glm::vec2(0.0f, 0.5f), glm::vec2(0.5f, 0.8f), glm::vec4(0.f, 1.f, 0.0f, 1.0f));
+	AddRectangle(glm::vec2(-0.5f, 0.35f), glm::vec2(0.3f, 0.8f), glm::vec4(0.f, 1.f, 0.0f, 1.0f));
 
 	// get entities from Scene? or get Sprites from Scene?
 	// what about drawing debug primitives? then get all entities to pass this* to them?
@@ -579,10 +583,6 @@ void Renderer::AddFilledRectangle(const glm::vec2& position, const glm::vec2& sc
 
 	m_QuadVertexCount += 4;
 	m_QuadIndexCount += 6;
-
-	//VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
-	//const VkDescriptorSet texture = m_WhiteTexture->GetDescriptorSet();
-	//vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &texture, 0, nullptr);
 }
 
 void Renderer::AddImageQuad(const glm::vec2& position, const glm::vec2& scale, const float angle, VkDescriptorSet textureId, const glm::vec4 tintColour)
@@ -591,6 +591,7 @@ void Renderer::AddImageQuad(const glm::vec2& position, const glm::vec2& scale, c
 								* glm::eulerAngleZ(angle)
 								* glm::scale(glm::mat4(1.f), glm::vec3(scale.x, scale.y, 1.f));
 
+	// TODO: find the texture in the texture list and add its index to the vertices 
 	for (uint16_t i = 0; i < vertexNumberForQuad; i++)
 	{
 		m_QuadVerticesPtr->position = transform * quadVertexPositions[i];
@@ -602,8 +603,6 @@ void Renderer::AddImageQuad(const glm::vec2& position, const glm::vec2& scale, c
 	m_QuadVertexCount += 4;
 	m_QuadIndexCount += 6;
 	
-	// probably need to add the texture to some array?
-	// and then bind befor the draw call?
 	VkCommandBuffer commandBuffer = Engine::GetActiveCommandBuffer();
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &textureId, 0, nullptr);
 }

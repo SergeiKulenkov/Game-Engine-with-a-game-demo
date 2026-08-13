@@ -69,18 +69,17 @@ class Renderer
 public:
 	void Render(const Scene& scene);
 
-	// using the same coordinate system as in imgui - start at the top left corner
 	void AddCircle(const glm::vec2& position, const glm::vec2 & scale, const glm::vec4 colour, const float thickness = 0.005f);
 	void AddCircle(const glm::vec2& position, const glm::vec2 & scale, const std::array<glm::vec4, 4>& colours, const float thickness = 0.005f);
 
+	// positionA is the top left corner, positionB is bottom right
 	// angle in radians
+	void AddRectangle(const glm::vec2& positionA, const glm::vec2& positionB, const glm::vec4 colour);
 	void AddFilledRectangle(const glm::vec2& position, const glm::vec2& scale, const glm::vec4 colour, const float angle = 0.f);
 
 	void AddImageQuad(const glm::vec2& position, const glm::vec2& scale, const float angle, VkDescriptorSet textureId, const glm::vec4 tintColour = glm::vec4(1.f));
 
 	void AddLine(const glm::vec2& positionA, const glm::vec2& positionB, const glm::vec4 colour);
-	// positionA is the top left corner, positionB is bottom right
-	void AddRectangle(const glm::vec2& positionA, const glm::vec2& positionB, const glm::vec4 colour);
 
 private:
 	Renderer() {}

@@ -41,8 +41,12 @@ public:
 	// in orthographic mode just modifies the orthographic size by the zoom value
 	void Zoom(const float zoom)
 	{
-		m_OrthoSize += zoom;
-		UpdateViewProjection();
+		if ((m_OrthoSize + zoom >= minOrthoSize) &&
+			(m_OrthoSize + zoom <= maxOrthoSize))
+		{
+			m_OrthoSize += zoom;
+			UpdateViewProjection();
+		}
 	}
 
 	void UpdateAspectRatio();
@@ -57,6 +61,8 @@ private:
 	////////////////////
 	
 	static constexpr float aspectRatio169 = 1.78f;
+	static constexpr float minOrthoSize = 0.25f;
+	static constexpr float maxOrthoSize = 2.f;
 
 	Scene* m_Scene = nullptr;
 
